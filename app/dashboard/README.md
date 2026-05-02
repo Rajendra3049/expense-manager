@@ -10,6 +10,6 @@ Everything under this folder is served under the **`/dashboard`** URL prefix.
 
 This duplicates the intent of root **`middleware.ts`** (defense in depth): middleware runs on the Edge first; the layout enforces the same rule during RSC rendering.
 
-## `page.tsx` (server)
+## `page.tsx`
 
-Placeholder dashboard home. Phase 1 will add expense list and forms here or in nested segments (e.g. `app/dashboard/expenses/page.tsx`).
+Renders **`ExpenseManager`** (client): add category, add expense (validated form), expense list with delete + confirm, and this month’s total. Data loads via TanStack Query + Supabase (`@/features/expenses/use-expense-data`).

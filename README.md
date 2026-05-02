@@ -2,7 +2,7 @@
 
 A responsive personal finance web app built with **Next.js (App Router)**, **Supabase** (PostgreSQL, Auth, Row Level Security), **Tailwind CSS**, and **TanStack Query**. The roadmap and phased delivery are described in [Implementation_plan.md](./Implementation_plan.md).
 
-## Current status (Phase 0)
+## Current status (Phase 0–1 MVP)
 
 Completed so far:
 
@@ -10,8 +10,9 @@ Completed so far:
 - Supabase browser and server clients (`@supabase/ssr`), env via `SUPABASE_URL` / `SUPABASE_ANON_KEY` (see [`.env.example`](./.env.example))
 - Middleware session refresh with `getClaims()`, protected `/dashboard` routes, and server layout guard
 - Email/password **login** and **signup** with Zod + React Hook Form, client auth context (`useAuth`), and sign-out
+- **Phase 1:** SQL migrations for `categories` / `expenses` + RLS ([`supabase/migrations/`](./supabase/migrations/)); dashboard **expense form**, **list** (newest first), **delete** (with confirm), **monthly total**, and minimal **category** creation (see [`components/expenses/`](./components/expenses/README.md))
 
-**Next (Phase 1):** expenses schema, RLS policies, CRUD UI, categories.
+**Next:** Phase 1 polish (filters, empty UX) or Phase 2 budgets per [Implementation_plan.md](./Implementation_plan.md).
 
 ## Tech stack
 
