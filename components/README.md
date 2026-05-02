@@ -7,6 +7,7 @@ Reusable **presentational** and **client** pieces used across routes. Prefer col
 | Folder | Role |
 | ------ | ---- |
 | [`auth/`](./auth/) | Login and signup forms (client components, React Hook Form + Zod) |
+| [`analytics/`](./analytics/) | Phase 3 charts on `/dashboard/analytics` (Recharts) |
 | [`budget/`](./budget/) | Phase 2 monthly budget + category caps (`/dashboard/budget`) |
 | [`expenses/`](./expenses/) | Phase 1 expense tracker UI on the dashboard |
 | [`layout/`](./layout/) | Shell UI such as the dashboard top bar |

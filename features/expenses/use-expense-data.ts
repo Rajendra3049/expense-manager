@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { analyticsKeys } from "@/features/analytics/query-keys";
 import { budgetKeys } from "@/features/budget/query-keys";
 import { categoryKeys, expenseKeys } from "@/features/expenses/query-keys";
 import type { ExpenseListFilters } from "@/lib/expenses/filters";
@@ -128,6 +129,7 @@ export function useInsertExpenseMutation() {
         queryKey: expenseKeys.monthTotal(d.getFullYear(), d.getMonth()),
       });
       await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+      await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
     },
   });
 }
@@ -174,6 +176,7 @@ export function useDeleteExpenseMutation() {
         queryKey: expenseKeys.monthTotal(d.getFullYear(), d.getMonth()),
       });
       await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+      await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
     },
   });
 }

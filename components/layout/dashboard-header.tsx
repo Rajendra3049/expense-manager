@@ -36,6 +36,12 @@ export function DashboardHeader() {
           >
             Budget
           </Link>
+          <Link
+            href="/dashboard/analytics"
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+          >
+            Analytics
+          </Link>
         </nav>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
           <span className="hidden truncate text-sm text-zinc-600 sm:inline dark:text-zinc-400">

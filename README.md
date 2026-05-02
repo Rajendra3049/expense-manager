@@ -12,8 +12,9 @@ Completed so far:
 - Email/password **login** and **signup** with Zod + React Hook Form, client auth context (`useAuth`), and sign-out
 - **Phase 1:** SQL migrations for `categories` / `expenses` + RLS ([`supabase/migrations/`](./supabase/migrations/)); dashboard **expense form**, **list** (newest first), **delete** (with confirm), **monthly total**, and minimal **category** creation (see [`components/expenses/`](./components/expenses/README.md))
 - **Phase 2:** `budgets` + `category_budgets` migration; **`/dashboard/budget`** for monthly total + per-category caps; spending vs limits with **80% / 100%** warnings; **expense filters** (date range + category) on the expenses view
+- **Phase 3:** Analytics RPC migration; **`/dashboard/analytics`** with **Recharts** pie (category totals for a date range) and bar chart (last 12 months from `monthly_expense_trends`)
 
-**Next:** Phase 2 polish or Phase 3 analytics per [Implementation_plan.md](./Implementation_plan.md).
+**Next:** Phase 4 accounts or further analytics per [Implementation_plan.md](./Implementation_plan.md).
 
 ## Tech stack
 

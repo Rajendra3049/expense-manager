@@ -19,6 +19,7 @@ This directory holds **routes**, **nested layouts**, and **global styles** for t
 | `dashboard/layout.tsx` | `/dashboard/*` | Server-side auth guard + dashboard header |
 | `dashboard/page.tsx` | `/dashboard` | Expense tracker (forms, filters, list, monthly total) |
 | `dashboard/budget/page.tsx` | `/dashboard/budget` | Monthly budget + category limits + warnings |
+| `dashboard/analytics/page.tsx` | `/dashboard/analytics` | Charts: category pie + monthly bar (Supabase RPCs) |
 | `globals.css` | — | Tailwind v4 import and design tokens |
 
 ## Adding routes

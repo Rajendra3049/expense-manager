@@ -20,5 +20,11 @@ supabase db push
 | --------- | -------- |
 | `migrations/20260502120000_phase1_expenses_categories.sql` | `categories`, `expenses`, indexes, RLS |
 | `migrations/20260502140000_phase2_budgets.sql` | `budgets`, `category_budgets`, indexes, RLS |
+| `migrations/20260503120000_phase3_analytics_rpcs.sql` | RPCs `expense_totals_by_category`, `monthly_expense_trends` |
 
 After applying, create a few **categories** for your user (via SQL or the app) before inserting **expenses** so `category_id` resolves and RLS `WITH CHECK` passes.
+
+## Troubleshooting
+
+- **`PGRST205` / missing `categories`:** Run Phase 1 migration (see project `README` or run `20260502120000_phase1_expenses_categories.sql`).
+- **Analytics / “Could not find the function”:** Run **`20260503120000_phase3_analytics_rpcs.sql`** so the RPCs exist and `authenticated` can execute them.
