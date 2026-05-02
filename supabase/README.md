@@ -24,8 +24,11 @@ supabase db push
 | `migrations/20260504100000_phase4_accounts.sql` | `accounts`, `expenses.account_id` FK, RLS, balance triggers |
 | `migrations/20260505100000_phase5_debts.sql` | `debts` (give/take, active/settled), RLS |
 | `migrations/20260506100000_phase6_emi_investments.sql` | `emis`, `investments`, RLS |
+| `migrations/20260507100000_phase7_recurring_trips.sql` | `trips`, `expenses.trip_id`, `recurring_expenses`, RLS |
 
 After applying, create a few **categories** for your user (via SQL or the app) before inserting **expenses** so `category_id` resolves and RLS `WITH CHECK` passes.
+
+**Phase 7** adds an optional FK from `recurring_expenses.account_id` to **`accounts`** only if that table already exists (e.g. after Phase 4). Expense RLS includes the account ownership check only when `accounts` exists; otherwise apply Phase 4 later if you want that enforcement at the database.
 
 ## Troubleshooting
 

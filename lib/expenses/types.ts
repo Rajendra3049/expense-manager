@@ -12,8 +12,10 @@ export type ExpenseListRow = {
   created_at: string;
   category_id: string;
   account_id: string | null;
+  trip_id: string | null;
   categories: { id: string; name: string } | { id: string; name: string }[] | null;
   accounts: { id: string; name: string } | { id: string; name: string }[] | null;
+  trips: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
 export function expenseCategoryName(row: ExpenseListRow): string {
@@ -27,5 +29,12 @@ export function expenseAccountName(row: ExpenseListRow): string {
   const a = row.accounts;
   if (!a) return "—";
   const first = Array.isArray(a) ? a[0] : a;
+  return first?.name ?? "—";
+}
+
+export function expenseTripName(row: ExpenseListRow): string {
+  const t = row.trips;
+  if (!t) return "—";
+  const first = Array.isArray(t) ? t[0] : t;
   return first?.name ?? "—";
 }

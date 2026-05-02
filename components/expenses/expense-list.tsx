@@ -8,6 +8,7 @@ import type { ExpenseListFilters } from "@/lib/expenses/filters";
 import {
   expenseAccountName,
   expenseCategoryName,
+  expenseTripName,
   type ExpenseListRow,
 } from "@/lib/expenses/types";
 
@@ -54,6 +55,9 @@ function ExpenseRowCard({
             {formatDisplayDate(row.date)}
             {expenseAccountName(row) !== "—" ? (
               <> · {expenseAccountName(row)}</>
+            ) : null}
+            {expenseTripName(row) !== "—" ? (
+              <> · Trip: {expenseTripName(row)}</>
             ) : null}
           </p>
           {row.note ? (
@@ -157,12 +161,13 @@ export function ExpenseList({ filters }: ExpenseListProps) {
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[800px] text-left text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
             <tr>
               <th className="px-4 py-3 sm:px-5">Date</th>
               <th className="px-4 py-3 sm:px-5">Category</th>
               <th className="px-4 py-3 sm:px-5">Account</th>
+              <th className="px-4 py-3 sm:px-5">Trip</th>
               <th className="px-4 py-3 sm:px-5">Note</th>
               <th className="px-4 py-3 text-right sm:px-5">Amount</th>
               <th className="px-4 py-3 sm:px-5">
@@ -182,7 +187,10 @@ export function ExpenseList({ filters }: ExpenseListProps) {
                 <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
                   {expenseAccountName(row)}
                 </td>
-                <td className="max-w-[240px] truncate px-4 py-3 text-zinc-600 dark:text-zinc-400 sm:px-5">
+                <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                  {expenseTripName(row)}
+                </td>
+                <td className="max-w-[200px] truncate px-4 py-3 text-zinc-600 dark:text-zinc-400 sm:px-5">
                   {row.note || "—"}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums text-zinc-900 dark:text-zinc-50 sm:px-5">

@@ -15,6 +15,7 @@ export const expenseFormSchema = z.object({
     }, "Enter an amount greater than 0"),
   categoryId: z.string().uuid("Select a category"),
   accountId: z.union([z.literal(""), z.string().uuid()]).default(""),
+  tripId: z.union([z.literal(""), z.string().uuid()]).default(""),
   date: dateString,
   note: z.string().max(2000).optional().default(""),
 });

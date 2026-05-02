@@ -9,6 +9,7 @@ import {
   useInsertExpenseMutation,
   toLocalDateString,
 } from "@/features/expenses/use-expense-data";
+import { useTripsQuery } from "@/features/trips/use-trip-data";
 import { expenseFormSchema, parseExpenseAmount } from "@/lib/expenses/schemas";
 import { getSupabaseRequestErrorMessage } from "@/lib/supabase/error-message";
 
@@ -17,6 +18,7 @@ export function ExpenseForm() {
     useCategoriesQuery();
   const { data: accounts = [], isLoading: accountsLoading } =
     useAccountsQuery();
+  const { data: trips = [], isLoading: tripsLoading } = useTripsQuery();
   const expenseCategories = useMemo(
     () => categories.filter((c) => c.type === "expense"),
     [categories],
@@ -36,6 +38,7 @@ export function ExpenseForm() {
       amount: "",
       categoryId: "",
       accountId: "",
+      tripId: "",
       date: today,
       note: "",
     },
@@ -46,6 +49,7 @@ export function ExpenseForm() {
       amount: parseExpenseAmount(values.amount),
       categoryId: values.categoryId,
       accountId: values.accountId ?? "",
+      tripId: values.tripId ?? "",
       date: values.date,
       note: values.note?.trim() ?? "",
     });
@@ -53,6 +57,7 @@ export function ExpenseForm() {
       amount: "",
       categoryId: "",
       accountId: "",
+      tripId: "",
       date: values.date,
       note: "",
     });
@@ -154,6 +159,36 @@ export function ExpenseForm() {
           {errors.accountId ? (
             <p className="mt-1 text-xs text-red-600" role="alert">
               {errors.accountId.message}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="sm:col-span-1">
+          <label
+            htmlFor="exp-trip"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          >
+            Trip{" "}
+            <span className="font-normal text-zinc-500">(optional)</span>
+          </label>
+          <select
+            id="exp-trip"
+            disabled={tripsLoading}
+            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            {...register("tripId")}
+          >
+            <option value="">
+              {tripsLoading ? "Loading…" : "None"}
+            </option>
+            {trips.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          {errors.tripId ? (
+            <p className="mt-1 text-xs text-red-600" role="alert">
+              {errors.tripId.message}
             </p>
           ) : null}
         </div>

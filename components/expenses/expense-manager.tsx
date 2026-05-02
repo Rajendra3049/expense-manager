@@ -6,6 +6,7 @@ import { ExpenseFilters } from "@/components/expenses/expense-filters";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 import { ExpenseList } from "@/components/expenses/expense-list";
 import { MonthlyTotalCard } from "@/components/expenses/monthly-total-card";
+import { RecurringDueProcessor } from "@/components/recurring/recurring-due-processor";
 import {
   expenseFiltersKey,
   type ExpenseListFilters,
@@ -27,6 +28,7 @@ export function ExpenseManager() {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_minmax(0,280px)] lg:items-start">
         <div className="space-y-6">
+          <RecurringDueProcessor />
           <AddCategoryForm />
           <ExpenseForm />
           <ExpenseFilters

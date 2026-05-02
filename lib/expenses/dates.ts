@@ -1,3 +1,39 @@
+export type RecurringFrequency =
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "yearly";
+
+/** Advance a local calendar `YYYY-MM-DD` by one period for recurring rules. */
+export function advanceRecurringNextDate(
+  ymd: string,
+  frequency: RecurringFrequency,
+): string {
+  const parts = ymd.split("-").map(Number);
+  const y = parts[0];
+  const m = parts[1];
+  const d = parts[2];
+  if (!y || !m || !d) return ymd;
+  const dt = new Date(y, m - 1, d);
+  switch (frequency) {
+    case "daily":
+      dt.setDate(dt.getDate() + 1);
+      break;
+    case "weekly":
+      dt.setDate(dt.getDate() + 7);
+      break;
+    case "monthly":
+      dt.setMonth(dt.getMonth() + 1);
+      break;
+    case "yearly":
+      dt.setFullYear(dt.getFullYear() + 1);
+      break;
+    default:
+      break;
+  }
+  return toLocalDateString(dt);
+}
+
 /** `YYYY-MM-DD` in local calendar for a Date (for `<input type="date">`). */
 export function toLocalDateString(d: Date): string {
   const y = d.getFullYear();

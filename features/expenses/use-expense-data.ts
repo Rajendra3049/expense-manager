@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { accountKeys } from "@/features/accounts/query-keys";
+import { tripKeys } from "@/features/trips/query-keys";
 import { analyticsKeys } from "@/features/analytics/query-keys";
 import { budgetKeys } from "@/features/budget/query-keys";
 import { categoryKeys, expenseKeys } from "@/features/expenses/query-keys";
@@ -47,8 +48,10 @@ export function useExpensesListQuery(filters?: ExpenseListFilters) {
           created_at,
           category_id,
           account_id,
+          trip_id,
           categories ( id, name ),
-          accounts ( id, name )
+          accounts ( id, name ),
+          trips ( id, name )
         `,
         );
 
@@ -106,6 +109,7 @@ export function useInsertExpenseMutation() {
       amount: number;
       categoryId: string;
       accountId: string;
+      tripId: string;
       date: string;
       note: string;
     }) => {
@@ -122,6 +126,7 @@ export function useInsertExpenseMutation() {
         category_id: input.categoryId,
         account_id:
           input.accountId.length > 0 ? input.accountId : null,
+        trip_id: input.tripId.length > 0 ? input.tripId : null,
         date: input.date,
         note: input.note,
       });
@@ -137,6 +142,7 @@ export function useInsertExpenseMutation() {
       await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
       await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
       await queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      await queryClient.invalidateQueries({ queryKey: tripKeys.all });
     },
   });
 }
@@ -185,6 +191,7 @@ export function useDeleteExpenseMutation() {
       await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
       await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
       await queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      await queryClient.invalidateQueries({ queryKey: tripKeys.all });
     },
   });
 }
