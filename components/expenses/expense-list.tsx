@@ -1,10 +1,13 @@
 "use client";
 
+import { ExpenseListSkeleton } from "@/components/ui/expense-list-skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import {
   useDeleteExpenseMutation,
-  useExpensesListQuery,
+  useExpensesInfiniteQuery,
   useSetExpenseArchivedMutation,
 } from "@/features/expenses/use-expense-data";
+import { getFriendlyErrorMessage } from "@/lib/errors/friendly-message";
 import { downloadExpensesCsv } from "@/lib/expenses/csv-export";
 import type { ExpenseListFilters } from "@/lib/expenses/filters";
 import {
@@ -134,8 +137,16 @@ type ExpenseListProps = {
 };
 
 export function ExpenseList({ filters }: ExpenseListProps) {
-  const { data: rows = [], isLoading, isError, error } =
-    useExpensesListQuery(filters);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useExpensesInfiniteQuery(filters);
+  const rows = data?.pages.flatMap((p) => p) ?? [];
   const deleteExpense = useDeleteExpenseMutation();
   const setArchived = useSetExpenseArchivedMutation();
 
@@ -160,18 +171,14 @@ export function ExpenseList({ filters }: ExpenseListProps) {
 
   function handleExportCsv() {
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadExpensesCsv(rows, `expenses-${stamp}.csv`);
+    downloadExpensesCsv(
+      rows,
+      `expenses-loaded-${stamp}.csv`,
+    );
   }
 
   if (isLoading) {
-    return (
-      <section
-        className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950"
-        aria-busy="true"
-      >
-        <p className="text-sm text-zinc-500">Loading expenses…</p>
-      </section>
-    );
+    return <ExpenseListSkeleton />;
   }
 
   if (isError) {
@@ -181,7 +188,7 @@ export function ExpenseList({ filters }: ExpenseListProps) {
         role="alert"
       >
         <p className="text-sm text-red-800 dark:text-red-200">
-          {error instanceof Error ? error.message : "Could not load expenses."}
+          {getFriendlyErrorMessage(error)}
         </p>
       </section>
     );
@@ -218,10 +225,11 @@ export function ExpenseList({ filters }: ExpenseListProps) {
         </div>
         <button
           type="button"
+          title="Exports all rows loaded below (use Load more to include additional pages)"
           onClick={handleExportCsv}
           className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
         >
-          Export CSV
+          Export loaded CSV
         </button>
       </div>
 
@@ -326,6 +334,26 @@ export function ExpenseList({ filters }: ExpenseListProps) {
           </tbody>
         </table>
       </div>
+
+      {hasNextPage ? (
+        <div className="flex justify-center border-t border-zinc-200 p-4 dark:border-zinc-800">
+          <button
+            type="button"
+            disabled={isFetchingNextPage}
+            onClick={() => void fetchNextPage()}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Spinner label="Loading more expenses" />
+                Loading…
+              </>
+            ) : (
+              "Load more"
+            )}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

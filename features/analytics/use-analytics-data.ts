@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { analyticsKeys } from "@/features/analytics/query-keys";
 import type { CategoryTotalRow, MonthlyTrendRow } from "@/features/analytics/types";
+import { suppressGlobalQueryErrorMeta } from "@/lib/react-query/query-meta";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function num(v: unknown): number {
@@ -16,6 +17,7 @@ function num(v: unknown): number {
 
 export function useCategoryTotalsQuery(from: string, to: string) {
   return useQuery({
+    meta: suppressGlobalQueryErrorMeta,
     queryKey: analyticsKeys.categoryTotals(from, to),
     queryFn: async (): Promise<CategoryTotalRow[]> => {
       const supabase = createBrowserSupabaseClient();
@@ -40,6 +42,7 @@ export function useCategoryTotalsQuery(from: string, to: string) {
 
 export function useMonthlyTrendsQuery(months: number) {
   return useQuery({
+    meta: suppressGlobalQueryErrorMeta,
     queryKey: analyticsKeys.monthlyTrends(months),
     queryFn: async (): Promise<MonthlyTrendRow[]> => {
       const supabase = createBrowserSupabaseClient();

@@ -3,12 +3,30 @@
 import { useMemo, useState } from "react";
 import { CategoryPieChart } from "@/components/analytics/category-pie-chart";
 import { MonthlyBarChart } from "@/components/analytics/monthly-bar-chart";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useCategoryTotalsQuery,
   useMonthlyTrendsQuery,
 } from "@/features/analytics/use-analytics-data";
+import { getFriendlyErrorMessage } from "@/lib/errors/friendly-message";
 import { toLocalDateString } from "@/lib/expenses/dates";
-import { getSupabaseRequestErrorMessage } from "@/lib/supabase/error-message";
+
+function AnalyticsChartSkeleton() {
+  return (
+    <div
+      className="mt-6 flex h-80 w-full flex-col items-center justify-center gap-4 rounded-lg border border-zinc-200 dark:border-zinc-800"
+      aria-busy="true"
+      aria-label="Loading chart"
+    >
+      <Skeleton className="size-40 shrink-0" rounded="full" />
+      <div className="flex w-full max-w-md flex-wrap justify-center gap-2 px-4">
+        <Skeleton className="h-3 w-20" rounded="md" />
+        <Skeleton className="h-3 w-24" rounded="md" />
+        <Skeleton className="h-3 w-16" rounded="md" />
+      </div>
+    </div>
+  );
+}
 
 function defaultCategoryRange(): { from: string; to: string } {
   const to = new Date();
@@ -30,11 +48,11 @@ export function AnalyticsDashboard() {
 
   const categoryError =
     categoryQuery.isError && categoryQuery.error
-      ? getSupabaseRequestErrorMessage(categoryQuery.error)
+      ? getFriendlyErrorMessage(categoryQuery.error)
       : null;
   const trendsError =
     trendsQuery.isError && trendsQuery.error
-      ? getSupabaseRequestErrorMessage(trendsQuery.error)
+      ? getFriendlyErrorMessage(trendsQuery.error)
       : null;
 
   return (
@@ -98,7 +116,7 @@ export function AnalyticsDashboard() {
             {categoryError}
           </p>
         ) : categoryQuery.isLoading ? (
-          <p className="mt-6 text-sm text-zinc-500">Loading chart…</p>
+          <AnalyticsChartSkeleton />
         ) : (
           <div className="mt-6">
             <CategoryPieChart data={categoryQuery.data ?? []} />
@@ -119,7 +137,7 @@ export function AnalyticsDashboard() {
             {trendsError}
           </p>
         ) : trendsQuery.isLoading ? (
-          <p className="mt-6 text-sm text-zinc-500">Loading chart…</p>
+          <AnalyticsChartSkeleton />
         ) : (
           <div className="mt-6">
             <MonthlyBarChart data={trendsQuery.data ?? []} />

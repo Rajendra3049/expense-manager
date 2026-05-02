@@ -40,5 +40,15 @@ export function getSupabaseRequestErrorMessage(error: unknown): string {
     return "Analytics SQL functions are missing. Run supabase/migrations/20260503120000_phase3_analytics_rpcs.sql in Supabase → SQL Editor. See supabase/README.md.";
   }
 
+  if (message.includes("column") && message.includes("does not exist")) {
+    if (
+      message.includes("expenses.tags") ||
+      message.includes("expenses.archived_at")
+    ) {
+      return "Your database is missing expense columns this app needs (tags and/or archive). In Supabase → SQL Editor, run `supabase/migrations/20260508100000_phase8_advanced.sql`, then reload the app. See `supabase/README.md` for the full migration order.";
+    }
+    return "The database schema does not match this app. Run the SQL migrations in `supabase/migrations/` in numeric order so tables and columns match. See `supabase/README.md`.";
+  }
+
   return message;
 }

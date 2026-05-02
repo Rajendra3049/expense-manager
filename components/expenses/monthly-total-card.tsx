@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentMonthExpenseTotalQuery } from "@/features/expenses/use-expense-data";
 import { localMonthBounds } from "@/lib/expenses/dates";
+import { getFriendlyErrorMessage } from "@/lib/errors/friendly-message";
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat(undefined, {
@@ -31,12 +33,10 @@ export function MonthlyTotalCard() {
       </h2>
       <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">{label}</p>
       {isLoading ? (
-        <p className="mt-4 text-2xl font-semibold tabular-nums text-zinc-400">
-          …
-        </p>
+        <Skeleton className="mt-4 h-9 w-36 max-w-full" rounded="lg" />
       ) : isError ? (
-        <p className="mt-3 text-sm text-red-600" role="alert">
-          {error instanceof Error ? error.message : "Could not load total."}
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
+          {getFriendlyErrorMessage(error)}
         </p>
       ) : (
         <p className="mt-4 text-3xl font-bold tracking-tight tabular-nums text-zinc-900 dark:text-zinc-50">

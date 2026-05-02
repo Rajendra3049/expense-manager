@@ -1,6 +1,12 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData, QueryKey } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useMemo } from "react";
 import { accountKeys } from "@/features/accounts/query-keys";
 import { tripKeys } from "@/features/trips/query-keys";
@@ -10,10 +16,162 @@ import { categoryKeys, expenseKeys } from "@/features/expenses/query-keys";
 import type { ExpenseListFilters } from "@/lib/expenses/filters";
 import { localMonthBounds, toLocalDateString } from "@/lib/expenses/dates";
 import type { CategoryRow, ExpenseListRow } from "@/lib/expenses/types";
+import { suppressGlobalQueryErrorMeta } from "@/lib/react-query/query-meta";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+
+export const EXPENSE_PAGE_SIZE = 25;
 
 function parseAmount(v: string | number): number {
   return typeof v === "number" ? v : Number.parseFloat(v);
+}
+
+function isInfiniteExpensePages(
+  data: unknown,
+): data is InfiniteData<ExpenseListRow[]> {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "pages" in data &&
+    Array.isArray((data as InfiniteData<ExpenseListRow[]>).pages)
+  );
+}
+
+function expenseInfinitePredicate(query: { queryKey: QueryKey }): boolean {
+  const k = query.queryKey;
+  return Array.isArray(k) && k[0] === "expenses" && k[1] === "infinite";
+}
+
+function removeExpenseFromInfiniteCache(
+  old: unknown,
+  id: string,
+): unknown {
+  if (!isInfiniteExpensePages(old)) return old;
+  return {
+    ...old,
+    pages: old.pages.map((p) => p.filter((r) => r.id !== id)),
+  };
+}
+
+function setExpenseArchivedInCache(
+  old: unknown,
+  id: string,
+  archived: boolean,
+): unknown {
+  if (!isInfiniteExpensePages(old)) return old;
+  const ts = archived ? new Date().toISOString() : null;
+  return {
+    ...old,
+    pages: old.pages.map((page) =>
+      page.map((r) =>
+        r.id === id ? { ...r, archived_at: ts } : r,
+      ),
+    ),
+  };
+}
+
+function listArchiveScopeFromInfiniteKey(
+  key: QueryKey,
+): "active" | "archived" | "all" {
+  const k = key as unknown[];
+  if (k.length >= 7 && typeof k[6] === "string") {
+    if (k[6] === "archived") return "archived";
+    if (k[6] === "all") return "all";
+  }
+  return "active";
+}
+
+function patchInfiniteAfterArchiveToggle(
+  old: unknown,
+  id: string,
+  archived: boolean,
+  listScope: "active" | "archived" | "all",
+): unknown {
+  if (listScope === "all") {
+    return setExpenseArchivedInCache(old, id, archived);
+  }
+  const shouldRemoveFromList =
+    (listScope === "active" && archived) ||
+    (listScope === "archived" && !archived);
+  if (shouldRemoveFromList) {
+    return removeExpenseFromInfiniteCache(old, id);
+  }
+  return setExpenseArchivedInCache(old, id, archived);
+}
+
+async function fetchExpensePage(
+  filters: ExpenseListFilters | undefined,
+  pageIndex: number,
+): Promise<ExpenseListRow[]> {
+  const supabase = createBrowserSupabaseClient();
+  const from = pageIndex * EXPENSE_PAGE_SIZE;
+  const to = from + EXPENSE_PAGE_SIZE - 1;
+
+  let q = supabase
+    .from("expenses")
+    .select(
+      `
+          id,
+          amount,
+          date,
+          note,
+          created_at,
+          category_id,
+          account_id,
+          trip_id,
+          tags,
+          archived_at,
+          categories ( id, name ),
+          accounts ( id, name ),
+          trips ( id, name )
+        `,
+    );
+
+  const archiveScope = filters?.archiveScope ?? "active";
+  if (archiveScope === "active") {
+    q = q.is("archived_at", null);
+  } else if (archiveScope === "archived") {
+    q = q.not("archived_at", "is", null);
+  }
+  // "all" — no archived_at filter
+
+  if (filters?.from) {
+    q = q.gte("date", filters.from);
+  }
+  if (filters?.to) {
+    q = q.lte("date", filters.to);
+  }
+  if (filters?.categoryId) {
+    q = q.eq("category_id", filters.categoryId);
+  }
+
+  const searchRaw = filters?.search?.trim() ?? "";
+  if (searchRaw.length > 0) {
+    const safe = searchRaw.replace(/[%_,]/g, " ").replace(/\s+/g, " ").trim();
+    if (safe.length > 0) {
+      const pattern = `%${safe}%`;
+      const { data: catRows, error: catErr } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("type", "expense")
+        .ilike("name", pattern);
+      if (catErr) throw catErr;
+      const catIds = (catRows ?? []).map((c: { id: string }) => c.id);
+      const orParts: string[] = [`note.ilike.${pattern}`];
+      if (catIds.length > 0) {
+        orParts.push(`category_id.in.(${catIds.join(",")})`);
+      }
+      q = q.or(orParts.join(","));
+    }
+  }
+
+  const { data, error } = await q
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return (data ?? []) as ExpenseListRow[];
 }
 
 export function useCategoriesQuery() {
@@ -32,74 +190,16 @@ export function useCategoriesQuery() {
   });
 }
 
-export function useExpensesListQuery(filters?: ExpenseListFilters) {
-  return useQuery({
-    queryKey: expenseKeys.list(filters),
-    queryFn: async (): Promise<ExpenseListRow[]> => {
-      const supabase = createBrowserSupabaseClient();
-      let q = supabase
-        .from("expenses")
-        .select(
-          `
-          id,
-          amount,
-          date,
-          note,
-          created_at,
-          category_id,
-          account_id,
-          trip_id,
-          tags,
-          archived_at,
-          categories ( id, name ),
-          accounts ( id, name ),
-          trips ( id, name )
-        `,
-        );
-
-      const archiveScope = filters?.archiveScope ?? "active";
-      if (archiveScope === "active") {
-        q = q.is("archived_at", null);
-      } else if (archiveScope === "archived") {
-        q = q.not("archived_at", "is", null);
-      }
-
-      if (filters?.from) {
-        q = q.gte("date", filters.from);
-      }
-      if (filters?.to) {
-        q = q.lte("date", filters.to);
-      }
-      if (filters?.categoryId) {
-        q = q.eq("category_id", filters.categoryId);
-      }
-
-      const searchRaw = filters?.search?.trim() ?? "";
-      if (searchRaw.length > 0) {
-        const safe = searchRaw.replace(/[%_,]/g, " ").replace(/\s+/g, " ").trim();
-        if (safe.length > 0) {
-          const pattern = `%${safe}%`;
-          const { data: catRows, error: catErr } = await supabase
-            .from("categories")
-            .select("id")
-            .eq("type", "expense")
-            .ilike("name", pattern);
-          if (catErr) throw catErr;
-          const catIds = (catRows ?? []).map((c: { id: string }) => c.id);
-          const orParts: string[] = [`note.ilike.${pattern}`];
-          if (catIds.length > 0) {
-            orParts.push(`category_id.in.(${catIds.join(",")})`);
-          }
-          q = q.or(orParts.join(","));
-        }
-      }
-
-      const { data, error } = await q
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return (data ?? []) as ExpenseListRow[];
+export function useExpensesInfiniteQuery(filters?: ExpenseListFilters) {
+  return useInfiniteQuery({
+    meta: suppressGlobalQueryErrorMeta,
+    queryKey: expenseKeys.infiniteList(filters),
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) =>
+      fetchExpensePage(filters, pageParam as number),
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < EXPENSE_PAGE_SIZE) return undefined;
+      return allPages.length;
     },
   });
 }
@@ -111,6 +211,7 @@ export function useCurrentMonthExpenseTotalQuery() {
   const { start, end } = localMonthBounds(now);
 
   return useQuery({
+    meta: suppressGlobalQueryErrorMeta,
     queryKey: expenseKeys.monthTotal(year, monthIndex),
     queryFn: async (): Promise<number> => {
       const supabase = createBrowserSupabaseClient();
@@ -220,7 +321,33 @@ export function useSetExpenseArchivedMutation() {
 
       if (error) throw error;
     },
-    onSuccess: async () => {
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: expenseKeys.all });
+      const previousEntries = queryClient.getQueriesData({
+        predicate: expenseInfinitePredicate,
+      });
+      for (const [key, data] of previousEntries) {
+        const scope = listArchiveScopeFromInfiniteKey(key);
+        queryClient.setQueryData(
+          key,
+          patchInfiniteAfterArchiveToggle(
+            data,
+            input.id,
+            input.archived,
+            scope,
+          ),
+        );
+      }
+      return { previousEntries };
+    },
+    onError: (_err, _input, ctx) => {
+      if (ctx?.previousEntries) {
+        for (const [key, data] of ctx.previousEntries) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+    },
+    onSettled: async () => {
       const d = new Date();
       await queryClient.invalidateQueries({ queryKey: expenseKeys.all });
       await queryClient.invalidateQueries({
@@ -243,7 +370,27 @@ export function useDeleteExpenseMutation() {
       const { error } = await supabase.from("expenses").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: async () => {
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: expenseKeys.all });
+      const previousEntries = queryClient.getQueriesData({
+        predicate: expenseInfinitePredicate,
+      });
+      for (const [key, data] of previousEntries) {
+        queryClient.setQueryData(
+          key,
+          removeExpenseFromInfiniteCache(data, deletedId),
+        );
+      }
+      return { previousEntries };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previousEntries) {
+        for (const [key, data] of ctx.previousEntries) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+    },
+    onSettled: async () => {
       const d = new Date();
       await queryClient.invalidateQueries({ queryKey: expenseKeys.all });
       await queryClient.invalidateQueries({

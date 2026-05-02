@@ -35,3 +35,4 @@ After applying, create a few **categories** for your user (via SQL or the app) b
 
 - **`PGRST205` / missing `categories`:** Run Phase 1 migration (see project `README` or run `20260502120000_phase1_expenses_categories.sql`).
 - **Analytics / “Could not find the function”:** Run **`20260503120000_phase3_analytics_rpcs.sql`** so the RPCs exist and `authenticated` can execute them.
+- **`column expenses.tags does not exist` (or `archived_at`):** The app expects Phase 8. Run **`20260508100000_phase8_advanced.sql`** in the SQL Editor (adds `tags`, `archived_at`, and refreshes analytics RPCs to exclude archived rows).
