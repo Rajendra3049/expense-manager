@@ -56,6 +56,7 @@ export function useBudgetMonthOverviewQuery(year: number, month: number) {
         supabase
           .from("expenses")
           .select("amount, category_id")
+          .is("archived_at", null)
           .gte("date", start)
           .lte("date", end),
       ]);

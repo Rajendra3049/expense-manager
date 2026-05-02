@@ -18,6 +18,17 @@ export const expenseFormSchema = z.object({
   tripId: z.union([z.literal(""), z.string().uuid()]).default(""),
   date: dateString,
   note: z.string().max(2000).optional().default(""),
+  tags: z
+    .string()
+    .optional()
+    .default("")
+    .transform((s) =>
+      (s ?? "")
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .slice(0, 40),
+    ),
 });
 
 export type ExpenseFormValues = z.infer<typeof expenseFormSchema>;

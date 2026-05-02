@@ -41,6 +41,7 @@ export function ExpenseForm() {
       tripId: "",
       date: today,
       note: "",
+      tags: "",
     },
   });
 
@@ -52,6 +53,7 @@ export function ExpenseForm() {
       tripId: values.tripId ?? "",
       date: values.date,
       note: values.note?.trim() ?? "",
+      tags: values.tags ?? [],
     });
     reset({
       amount: "",
@@ -60,6 +62,7 @@ export function ExpenseForm() {
       tripId: "",
       date: values.date,
       note: "",
+      tags: "",
     });
   });
 
@@ -209,6 +212,30 @@ export function ExpenseForm() {
           {errors.date ? (
             <p className="mt-1 text-xs text-red-600" role="alert">
               {errors.date.message}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="sm:col-span-2">
+          <label
+            htmlFor="exp-tags"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          >
+            Tags{" "}
+            <span className="font-normal text-zinc-500">
+              (optional, comma-separated)
+            </span>
+          </label>
+          <input
+            id="exp-tags"
+            type="text"
+            placeholder="e.g. groceries, weekly"
+            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            {...register("tags")}
+          />
+          {errors.tags?.message ? (
+            <p className="mt-1 text-xs text-red-600" role="alert">
+              {errors.tags.message}
             </p>
           ) : null}
         </div>

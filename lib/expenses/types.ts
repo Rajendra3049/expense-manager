@@ -13,6 +13,8 @@ export type ExpenseListRow = {
   category_id: string;
   account_id: string | null;
   trip_id: string | null;
+  tags: string[] | null;
+  archived_at: string | null;
   categories: { id: string; name: string } | { id: string; name: string }[] | null;
   accounts: { id: string; name: string } | { id: string; name: string }[] | null;
   trips: { id: string; name: string } | { id: string; name: string }[] | null;
@@ -37,4 +39,10 @@ export function expenseTripName(row: ExpenseListRow): string {
   if (!t) return "—";
   const first = Array.isArray(t) ? t[0] : t;
   return first?.name ?? "—";
+}
+
+export function expenseTagsList(row: ExpenseListRow): string[] {
+  const t = row.tags;
+  if (!Array.isArray(t)) return [];
+  return t.filter((x): x is string => typeof x === "string");
 }

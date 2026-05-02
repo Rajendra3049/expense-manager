@@ -9,6 +9,8 @@ export const expenseKeys = {
       filters?.from ?? "",
       filters?.to ?? "",
       filters?.categoryId ?? "",
+      filters?.search ?? "",
+      filters?.archiveScope ?? "active",
     ] as const,
   monthTotal: (year: number, monthIndex: number) =>
     [...expenseKeys.all, "month-total", year, monthIndex] as const,

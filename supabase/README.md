@@ -25,6 +25,7 @@ supabase db push
 | `migrations/20260505100000_phase5_debts.sql` | `debts` (give/take, active/settled), RLS |
 | `migrations/20260506100000_phase6_emi_investments.sql` | `emis`, `investments`, RLS |
 | `migrations/20260507100000_phase7_recurring_trips.sql` | `trips`, `expenses.trip_id`, `recurring_expenses`, RLS |
+| `migrations/20260508100000_phase8_advanced.sql` | `expenses.tags`, `expenses.archived_at`; analytics RPCs exclude archived |
 
 After applying, create a few **categories** for your user (via SQL or the app) before inserting **expenses** so `category_id` resolves and RLS `WITH CHECK` passes.
 

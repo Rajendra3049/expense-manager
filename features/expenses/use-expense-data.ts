@@ -49,11 +49,20 @@ export function useExpensesListQuery(filters?: ExpenseListFilters) {
           category_id,
           account_id,
           trip_id,
+          tags,
+          archived_at,
           categories ( id, name ),
           accounts ( id, name ),
           trips ( id, name )
         `,
         );
+
+      const archiveScope = filters?.archiveScope ?? "active";
+      if (archiveScope === "active") {
+        q = q.is("archived_at", null);
+      } else if (archiveScope === "archived") {
+        q = q.not("archived_at", "is", null);
+      }
 
       if (filters?.from) {
         q = q.gte("date", filters.from);
@@ -63,6 +72,26 @@ export function useExpensesListQuery(filters?: ExpenseListFilters) {
       }
       if (filters?.categoryId) {
         q = q.eq("category_id", filters.categoryId);
+      }
+
+      const searchRaw = filters?.search?.trim() ?? "";
+      if (searchRaw.length > 0) {
+        const safe = searchRaw.replace(/[%_,]/g, " ").replace(/\s+/g, " ").trim();
+        if (safe.length > 0) {
+          const pattern = `%${safe}%`;
+          const { data: catRows, error: catErr } = await supabase
+            .from("categories")
+            .select("id")
+            .eq("type", "expense")
+            .ilike("name", pattern);
+          if (catErr) throw catErr;
+          const catIds = (catRows ?? []).map((c: { id: string }) => c.id);
+          const orParts: string[] = [`note.ilike.${pattern}`];
+          if (catIds.length > 0) {
+            orParts.push(`category_id.in.(${catIds.join(",")})`);
+          }
+          q = q.or(orParts.join(","));
+        }
       }
 
       const { data, error } = await q
@@ -88,6 +117,7 @@ export function useCurrentMonthExpenseTotalQuery() {
       const { data, error } = await supabase
         .from("expenses")
         .select("amount")
+        .is("archived_at", null)
         .gte("date", start)
         .lte("date", end);
 
@@ -112,6 +142,7 @@ export function useInsertExpenseMutation() {
       tripId: string;
       date: string;
       note: string;
+      tags: string[];
     }) => {
       const supabase = createBrowserSupabaseClient();
       const {
@@ -129,6 +160,7 @@ export function useInsertExpenseMutation() {
         trip_id: input.tripId.length > 0 ? input.tripId : null,
         date: input.date,
         note: input.note,
+        tags: input.tags.length > 0 ? input.tags : [],
       });
 
       if (error) throw error;
@@ -169,6 +201,35 @@ export function useInsertCategoryMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+export function useSetExpenseArchivedMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { id: string; archived: boolean }) => {
+      const supabase = createBrowserSupabaseClient();
+      const { error } = await supabase
+        .from("expenses")
+        .update({
+          archived_at: input.archived ? new Date().toISOString() : null,
+        })
+        .eq("id", input.id);
+
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      const d = new Date();
+      await queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: expenseKeys.monthTotal(d.getFullYear(), d.getMonth()),
+      });
+      await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+      await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
+      await queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      await queryClient.invalidateQueries({ queryKey: tripKeys.all });
     },
   });
 }
