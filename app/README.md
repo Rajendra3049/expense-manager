@@ -17,7 +17,8 @@ This directory holds **routes**, **nested layouts**, and **global styles** for t
 | `(auth)/login/page.tsx` | `/login` | Wrapped in `Suspense` for `useSearchParams` |
 | `(auth)/signup/page.tsx` | `/signup` | Email/password registration |
 | `dashboard/layout.tsx` | `/dashboard/*` | Server-side auth guard + dashboard header |
-| `dashboard/page.tsx` | `/dashboard` | Placeholder until Phase 1 expenses |
+| `dashboard/page.tsx` | `/dashboard` | Expense tracker (forms, filters, list, monthly total) |
+| `dashboard/budget/page.tsx` | `/dashboard/budget` | Monthly budget + category limits + warnings |
 | `globals.css` | — | Tailwind v4 import and design tokens |
 
 ## Adding routes

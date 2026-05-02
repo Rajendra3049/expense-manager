@@ -22,3 +22,17 @@ export function localMonthBounds(d: Date): {
     label: d.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
   };
 }
+
+/** `month` is 1–12 (calendar month). */
+export function localMonthBoundsFromParts(
+  year: number,
+  month: number,
+): { start: string; end: string; label: string } {
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 0);
+  return {
+    start: toLocalDateString(start),
+    end: toLocalDateString(end),
+    label: start.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+  };
+}

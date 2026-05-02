@@ -16,13 +16,27 @@ export function DashboardHeader() {
 
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href="/dashboard"
           className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
         >
           Expense Manager
         </Link>
+        <nav className="flex flex-wrap items-center gap-1">
+          <Link
+            href="/dashboard"
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+          >
+            Expenses
+          </Link>
+          <Link
+            href="/dashboard/budget"
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+          >
+            Budget
+          </Link>
+        </nav>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
           <span className="hidden truncate text-sm text-zinc-600 sm:inline dark:text-zinc-400">
             {user?.email}

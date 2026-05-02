@@ -7,6 +7,7 @@ Reusable **presentational** and **client** pieces used across routes. Prefer col
 | Folder | Role |
 | ------ | ---- |
 | [`auth/`](./auth/) | Login and signup forms (client components, React Hook Form + Zod) |
+| [`budget/`](./budget/) | Phase 2 monthly budget + category caps (`/dashboard/budget`) |
 | [`expenses/`](./expenses/) | Phase 1 expense tracker UI on the dashboard |
 | [`layout/`](./layout/) | Shell UI such as the dashboard top bar |
 | [`providers/`](./providers/) | App-wide context: TanStack Query and Supabase-driven auth state |

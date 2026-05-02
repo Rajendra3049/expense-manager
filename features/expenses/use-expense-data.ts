@@ -2,7 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { budgetKeys } from "@/features/budget/query-keys";
 import { categoryKeys, expenseKeys } from "@/features/expenses/query-keys";
+import type { ExpenseListFilters } from "@/lib/expenses/filters";
 import { localMonthBounds, toLocalDateString } from "@/lib/expenses/dates";
 import type { CategoryRow, ExpenseListRow } from "@/lib/expenses/types";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -27,12 +29,12 @@ export function useCategoriesQuery() {
   });
 }
 
-export function useExpensesListQuery() {
+export function useExpensesListQuery(filters?: ExpenseListFilters) {
   return useQuery({
-    queryKey: expenseKeys.list(),
+    queryKey: expenseKeys.list(filters),
     queryFn: async (): Promise<ExpenseListRow[]> => {
       const supabase = createBrowserSupabaseClient();
-      const { data, error } = await supabase
+      let q = supabase
         .from("expenses")
         .select(
           `
@@ -44,7 +46,19 @@ export function useExpensesListQuery() {
           category_id,
           categories ( id, name )
         `,
-        )
+        );
+
+      if (filters?.from) {
+        q = q.gte("date", filters.from);
+      }
+      if (filters?.to) {
+        q = q.lte("date", filters.to);
+      }
+      if (filters?.categoryId) {
+        q = q.eq("category_id", filters.categoryId);
+      }
+
+      const { data, error } = await q
         .order("date", { ascending: false })
         .order("created_at", { ascending: false });
 
@@ -109,10 +123,11 @@ export function useInsertExpenseMutation() {
     },
     onSuccess: async () => {
       const d = new Date();
-      await queryClient.invalidateQueries({ queryKey: expenseKeys.list() });
+      await queryClient.invalidateQueries({ queryKey: expenseKeys.all });
       await queryClient.invalidateQueries({
         queryKey: expenseKeys.monthTotal(d.getFullYear(), d.getMonth()),
       });
+      await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
     },
   });
 }
@@ -154,10 +169,11 @@ export function useDeleteExpenseMutation() {
     },
     onSuccess: async () => {
       const d = new Date();
-      await queryClient.invalidateQueries({ queryKey: expenseKeys.list() });
+      await queryClient.invalidateQueries({ queryKey: expenseKeys.all });
       await queryClient.invalidateQueries({
         queryKey: expenseKeys.monthTotal(d.getFullYear(), d.getMonth()),
       });
+      await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
     },
   });
 }

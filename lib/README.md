@@ -8,7 +8,8 @@ Framework-agnostic **utilities**, **Supabase wiring**, and small **auth** helper
 | ---- | ------- |
 | [`supabase/`](./supabase/README.md) | Browser client, server client (cookies), middleware session helper, env readers |
 | [`auth/`](./auth/README.md) | Zod schemas, auth error formatting, safe redirect path helper |
-| [`expenses/`](./expenses/) | Zod schemas and date helpers for expense/category forms |
+| [`expenses/`](./expenses/) | Zod schemas, date helpers, list filter key helper |
+| [`budget/`](./budget/README.md) | Budget warning helpers (`warnings.ts`) |
 | `http.ts` | Preconfigured **axios** instance for third-party HTTP (optional `NEXT_PUBLIC_APP_URL` as `baseURL`) |
 
 ## Import examples

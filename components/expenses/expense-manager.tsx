@@ -1,11 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { AddCategoryForm } from "@/components/expenses/add-category-form";
+import { ExpenseFilters } from "@/components/expenses/expense-filters";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 import { ExpenseList } from "@/components/expenses/expense-list";
 import { MonthlyTotalCard } from "@/components/expenses/monthly-total-card";
+import {
+  expenseFiltersKey,
+  type ExpenseListFilters,
+} from "@/lib/expenses/filters";
 
 export function ExpenseManager() {
+  const [listFilters, setListFilters] = useState<ExpenseListFilters>({});
+
   return (
     <div className="space-y-8">
       <header className="space-y-1">
@@ -21,7 +29,12 @@ export function ExpenseManager() {
         <div className="space-y-6">
           <AddCategoryForm />
           <ExpenseForm />
-          <ExpenseList />
+          <ExpenseFilters
+            key={expenseFiltersKey(listFilters)}
+            value={listFilters}
+            onChange={setListFilters}
+          />
+          <ExpenseList filters={listFilters} />
         </div>
         <MonthlyTotalCard />
       </div>

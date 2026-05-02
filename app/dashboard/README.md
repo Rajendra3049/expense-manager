@@ -12,4 +12,10 @@ This duplicates the intent of root **`middleware.ts`** (defense in depth): middl
 
 ## `page.tsx`
 
-Renders **`ExpenseManager`** (client): add category, add expense (validated form), expense list with delete + confirm, and this month’s total. Data loads via TanStack Query + Supabase (`@/features/expenses/use-expense-data`).
+Renders **`ExpenseManager`** (client): add category, add expense, **filters** (date range + category), list with delete + confirm, and this month’s total.
+
+## `budget/page.tsx`
+
+Phase 2 **budget** UI: monthly total + per-category limits, spending vs limits with warnings (`/dashboard/budget`).
+
+Data uses TanStack Query + Supabase (`@/features/expenses/*`, `@/features/budget/*`).

@@ -4,6 +4,7 @@ import {
   useDeleteExpenseMutation,
   useExpensesListQuery,
 } from "@/features/expenses/use-expense-data";
+import type { ExpenseListFilters } from "@/lib/expenses/filters";
 import { expenseCategoryName, type ExpenseListRow } from "@/lib/expenses/types";
 
 function formatMoney(value: string | number): string {
@@ -69,8 +70,13 @@ function ExpenseRowCard({
   );
 }
 
-export function ExpenseList() {
-  const { data: rows = [], isLoading, isError, error } = useExpensesListQuery();
+type ExpenseListProps = {
+  filters?: ExpenseListFilters;
+};
+
+export function ExpenseList({ filters }: ExpenseListProps) {
+  const { data: rows = [], isLoading, isError, error } =
+    useExpensesListQuery(filters);
   const deleteExpense = useDeleteExpenseMutation();
 
   function handleDelete(id: string) {

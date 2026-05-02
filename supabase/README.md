@@ -14,10 +14,11 @@ From the project root (with CLI linked to your project):
 supabase db push
 ```
 
-## Phase 1 files
+## Migrations
 
 | Migration | Contents |
 | --------- | -------- |
-| `migrations/20260502120000_phase1_expenses_categories.sql` | `categories`, `expenses`, indexes, RLS for `authenticated` |
+| `migrations/20260502120000_phase1_expenses_categories.sql` | `categories`, `expenses`, indexes, RLS |
+| `migrations/20260502140000_phase2_budgets.sql` | `budgets`, `category_budgets`, indexes, RLS |
 
 After applying, create a few **categories** for your user (via SQL or the app) before inserting **expenses** so `category_id` resolves and RLS `WITH CHECK` passes.
