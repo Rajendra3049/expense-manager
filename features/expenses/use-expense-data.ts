@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { accountKeys } from "@/features/accounts/query-keys";
 import { analyticsKeys } from "@/features/analytics/query-keys";
 import { budgetKeys } from "@/features/budget/query-keys";
 import { categoryKeys, expenseKeys } from "@/features/expenses/query-keys";
@@ -45,7 +46,9 @@ export function useExpensesListQuery(filters?: ExpenseListFilters) {
           note,
           created_at,
           category_id,
-          categories ( id, name )
+          account_id,
+          categories ( id, name ),
+          accounts ( id, name )
         `,
         );
 
@@ -102,6 +105,7 @@ export function useInsertExpenseMutation() {
     mutationFn: async (input: {
       amount: number;
       categoryId: string;
+      accountId: string;
       date: string;
       note: string;
     }) => {
@@ -116,6 +120,8 @@ export function useInsertExpenseMutation() {
         user_id: user.id,
         amount: input.amount,
         category_id: input.categoryId,
+        account_id:
+          input.accountId.length > 0 ? input.accountId : null,
         date: input.date,
         note: input.note,
       });
@@ -130,6 +136,7 @@ export function useInsertExpenseMutation() {
       });
       await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
       await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
+      await queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }
@@ -177,6 +184,7 @@ export function useDeleteExpenseMutation() {
       });
       await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
       await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
+      await queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }

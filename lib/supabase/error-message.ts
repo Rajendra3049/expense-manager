@@ -29,7 +29,7 @@ export function getSupabaseRequestErrorMessage(error: unknown): string {
     message.includes("Could not find the table") ||
     message.includes("schema cache")
   ) {
-    return "The database tables are missing. Open Supabase → SQL Editor and run the migration: supabase/migrations/20260502120000_phase1_expenses_categories.sql (then 20260502140000_phase2_budgets.sql if you use budgets). See supabase/README.md.";
+    return "The database tables are missing. Open Supabase → SQL Editor and run migrations from `supabase/migrations/` in order (Phase 1 expenses/categories, then Phase 2 budgets if needed, Phase 4 accounts for the accounts feature). See `supabase/README.md`.";
   }
 
   if (

@@ -3,16 +3,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
+import { useAccountsQuery } from "@/features/accounts/use-account-data";
 import {
   useCategoriesQuery,
   useInsertExpenseMutation,
   toLocalDateString,
 } from "@/features/expenses/use-expense-data";
 import { expenseFormSchema, parseExpenseAmount } from "@/lib/expenses/schemas";
+import { getSupabaseRequestErrorMessage } from "@/lib/supabase/error-message";
 
 export function ExpenseForm() {
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategoriesQuery();
+  const { data: accounts = [], isLoading: accountsLoading } =
+    useAccountsQuery();
   const expenseCategories = useMemo(
     () => categories.filter((c) => c.type === "expense"),
     [categories],
@@ -31,6 +35,7 @@ export function ExpenseForm() {
     defaultValues: {
       amount: "",
       categoryId: "",
+      accountId: "",
       date: today,
       note: "",
     },
@@ -40,12 +45,14 @@ export function ExpenseForm() {
     await insertExpense.mutateAsync({
       amount: parseExpenseAmount(values.amount),
       categoryId: values.categoryId,
+      accountId: values.accountId ?? "",
       date: values.date,
       note: values.note?.trim() ?? "",
     });
     reset({
       amount: "",
       categoryId: "",
+      accountId: "",
       date: values.date,
       note: "",
     });
@@ -123,6 +130,36 @@ export function ExpenseForm() {
 
         <div className="sm:col-span-1">
           <label
+            htmlFor="exp-account"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          >
+            Account{" "}
+            <span className="font-normal text-zinc-500">(optional)</span>
+          </label>
+          <select
+            id="exp-account"
+            disabled={accountsLoading}
+            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            {...register("accountId")}
+          >
+            <option value="">
+              {accountsLoading ? "Loading…" : "None"}
+            </option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+          {errors.accountId ? (
+            <p className="mt-1 text-xs text-red-600" role="alert">
+              {errors.accountId.message}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="sm:col-span-1">
+          <label
             htmlFor="exp-date"
             className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
           >
@@ -179,9 +216,7 @@ export function ExpenseForm() {
 
       {insertExpense.isError ? (
         <p className="mt-3 text-sm text-red-600" role="alert">
-          {insertExpense.error instanceof Error
-            ? insertExpense.error.message
-            : "Could not save expense."}
+          {getSupabaseRequestErrorMessage(insertExpense.error)}
         </p>
       ) : null}
     </section>

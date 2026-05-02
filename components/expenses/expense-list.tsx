@@ -5,7 +5,11 @@ import {
   useExpensesListQuery,
 } from "@/features/expenses/use-expense-data";
 import type { ExpenseListFilters } from "@/lib/expenses/filters";
-import { expenseCategoryName, type ExpenseListRow } from "@/lib/expenses/types";
+import {
+  expenseAccountName,
+  expenseCategoryName,
+  type ExpenseListRow,
+} from "@/lib/expenses/types";
 
 function formatMoney(value: string | number): string {
   const n = typeof value === "number" ? value : Number.parseFloat(value);
@@ -48,6 +52,9 @@ function ExpenseRowCard({
           </p>
           <p className="text-xs text-zinc-500 dark:text-zinc-500">
             {formatDisplayDate(row.date)}
+            {expenseAccountName(row) !== "—" ? (
+              <> · {expenseAccountName(row)}</>
+            ) : null}
           </p>
           {row.note ? (
             <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
@@ -150,11 +157,12 @@ export function ExpenseList({ filters }: ExpenseListProps) {
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
             <tr>
               <th className="px-4 py-3 sm:px-5">Date</th>
               <th className="px-4 py-3 sm:px-5">Category</th>
+              <th className="px-4 py-3 sm:px-5">Account</th>
               <th className="px-4 py-3 sm:px-5">Note</th>
               <th className="px-4 py-3 text-right sm:px-5">Amount</th>
               <th className="px-4 py-3 sm:px-5">
@@ -170,6 +178,9 @@ export function ExpenseList({ filters }: ExpenseListProps) {
                 </td>
                 <td className="px-4 py-3 text-zinc-800 dark:text-zinc-200 sm:px-5">
                   {expenseCategoryName(row)}
+                </td>
+                <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                  {expenseAccountName(row)}
                 </td>
                 <td className="max-w-[240px] truncate px-4 py-3 text-zinc-600 dark:text-zinc-400 sm:px-5">
                   {row.note || "—"}
