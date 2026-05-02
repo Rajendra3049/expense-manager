@@ -22,6 +22,7 @@ supabase db push
 | `migrations/20260502140000_phase2_budgets.sql` | `budgets`, `category_budgets`, indexes, RLS |
 | `migrations/20260503120000_phase3_analytics_rpcs.sql` | RPCs `expense_totals_by_category`, `monthly_expense_trends` |
 | `migrations/20260504100000_phase4_accounts.sql` | `accounts`, `expenses.account_id` FK, RLS, balance triggers |
+| `migrations/20260505100000_phase5_debts.sql` | `debts` (give/take, active/settled), RLS |
 
 After applying, create a few **categories** for your user (via SQL or the app) before inserting **expenses** so `category_id` resolves and RLS `WITH CHECK` passes.
 
