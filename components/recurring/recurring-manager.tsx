@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useConfirm } from "@/components/providers/confirm-provider";
 import { useAccountsQuery } from "@/features/accounts/use-account-data";
 import { useCategoriesQuery } from "@/features/expenses/use-expense-data";
@@ -12,6 +12,7 @@ import {
   useProcessDueRecurringMutation,
   useRecurringExpensesQuery,
   useToggleRecurringActiveMutation,
+  useUpdateRecurringExpenseMutation,
 } from "@/features/recurring/use-recurring-data";
 import type { RecurringExpenseRow } from "@/features/recurring/types";
 import { toLocalDateString } from "@/lib/expenses/dates";
@@ -62,6 +63,8 @@ export function RecurringManager() {
   const processDue = useProcessDueRecurringMutation();
   const toggle = useToggleRecurringActiveMutation();
   const remove = useDeleteRecurringExpenseMutation();
+  const updateRule = useUpdateRecurringExpenseMutation();
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const today = useMemo(() => toLocalDateString(new Date()), []);
 
   const {
@@ -87,15 +90,29 @@ export function RecurringManager() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    await insertRule.mutateAsync({
-      label: values.label,
-      amount: values.amount,
-      categoryId: values.categoryId,
-      accountId: values.accountId ?? "",
-      frequency: values.frequency,
-      nextDate: values.nextDate,
-      note: values.note,
-    });
+    if (editingRuleId) {
+      await updateRule.mutateAsync({
+        id: editingRuleId,
+        label: values.label,
+        amount: values.amount,
+        categoryId: values.categoryId,
+        accountId: values.accountId ?? "",
+        frequency: values.frequency,
+        nextDate: values.nextDate,
+        note: values.note,
+      });
+      setEditingRuleId(null);
+    } else {
+      await insertRule.mutateAsync({
+        label: values.label,
+        amount: values.amount,
+        categoryId: values.categoryId,
+        accountId: values.accountId ?? "",
+        frequency: values.frequency,
+        nextDate: values.nextDate,
+        note: values.note,
+      });
+    }
     reset({
       label: "",
       amount: "",
@@ -106,6 +123,32 @@ export function RecurringManager() {
       note: "",
     });
   });
+
+  function onEditRule(rule: RecurringExpenseRow) {
+    setEditingRuleId(rule.id);
+    reset({
+      label: rule.label,
+      amount: String(rule.amount),
+      categoryId: rule.category_id,
+      accountId: rule.account_id ?? "",
+      frequency: rule.frequency,
+      nextDate: rule.next_date,
+      note: rule.note ?? "",
+    });
+  }
+
+  function onCancelEdit() {
+    setEditingRuleId(null);
+    reset({
+      label: "",
+      amount: "",
+      categoryId: "",
+      accountId: "",
+      frequency: "monthly",
+      nextDate: today,
+      note: "",
+    });
+  }
 
   return (
     <div className="space-y-8">
@@ -143,7 +186,7 @@ export function RecurringManager() {
           id="new-recurring-heading"
           className="text-base font-semibold text-zinc-900 dark:text-zinc-50"
         >
-          New rule
+          {editingRuleId ? "Edit rule" : "New rule"}
         </h2>
         <form onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -325,18 +368,34 @@ export function RecurringManager() {
               disabled={
                 isSubmitting ||
                 insertRule.isPending ||
+                updateRule.isPending ||
                 expenseCategories.length === 0
               }
               className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[140px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
-              {insertRule.isPending ? "Saving…" : "Add rule"}
+              {insertRule.isPending || updateRule.isPending
+                ? "Saving…"
+                : editingRuleId
+                  ? "Update rule"
+                  : "Add rule"}
             </button>
+            {editingRuleId ? (
+              <button
+                type="button"
+                onClick={onCancelEdit}
+                className="mt-2 w-full rounded-lg border border-zinc-300 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 sm:ml-2 sm:mt-0 sm:w-auto sm:min-w-[120px] dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              >
+                Cancel edit
+              </button>
+            ) : null}
           </div>
         </form>
 
-        {insertRule.isError ? (
+        {insertRule.isError || updateRule.isError ? (
           <p className="mt-3 text-sm text-red-600" role="alert">
-            {getSupabaseRequestErrorMessage(insertRule.error)}
+            {getSupabaseRequestErrorMessage(
+              insertRule.isError ? insertRule.error : updateRule.error,
+            )}
           </p>
         ) : null}
       </section>
@@ -423,6 +482,14 @@ export function RecurringManager() {
                       )}
                     </td>
                     <td className="space-x-2 px-4 py-3 sm:px-5">
+                      <button
+                        type="button"
+                        disabled={updateRule.isPending}
+                        onClick={() => onEditRule(r)}
+                        className="rounded-lg border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                      >
+                        Edit
+                      </button>
                       <button
                         type="button"
                         disabled={toggle.isPending}

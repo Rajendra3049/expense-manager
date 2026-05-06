@@ -78,6 +78,42 @@ export function useInsertRecurringExpenseMutation() {
   });
 }
 
+export function useUpdateRecurringExpenseMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      label: string;
+      amount: number;
+      categoryId: string;
+      accountId: string;
+      frequency: RecurringExpenseRow["frequency"];
+      nextDate: string;
+      note: string;
+    }) => {
+      const supabase = createBrowserSupabaseClient();
+      const { error } = await supabase
+        .from("recurring_expenses")
+        .update({
+          label: input.label,
+          amount: input.amount,
+          category_id: input.categoryId,
+          account_id: input.accountId.length > 0 ? input.accountId : null,
+          frequency: input.frequency,
+          next_date: input.nextDate,
+          note: input.note,
+        })
+        .eq("id", input.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: recurringKeys.all });
+    },
+  });
+}
+
 export function useToggleRecurringActiveMutation() {
   const queryClient = useQueryClient();
 

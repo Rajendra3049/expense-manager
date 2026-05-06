@@ -1,14 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTheme } from "@/components/providers/theme-provider";
+
+const NAV_ITEMS = [
+  { href: "/dashboard", label: "Expenses" },
+  { href: "/dashboard/recurring", label: "Recurring" },
+  { href: "/dashboard/trips", label: "Trips" },
+  { href: "/dashboard/accounts", label: "Accounts" },
+  { href: "/dashboard/debts", label: "Debts" },
+  { href: "/dashboard/emis", label: "EMIs" },
+  { href: "/dashboard/investments", label: "Investments" },
+  { href: "/dashboard/budget", label: "Budget" },
+  { href: "/dashboard/analytics", label: "Analytics" },
+] as const;
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
 
   async function onSignOut() {
     await signOut();
@@ -26,60 +39,26 @@ export function DashboardHeader() {
           Expense Manager
         </Link>
         <nav className="flex flex-wrap items-center gap-1">
-          <Link
-            href="/dashboard"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            Expenses
-          </Link>
-          <Link
-            href="/dashboard/recurring"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            Recurring
-          </Link>
-          <Link
-            href="/dashboard/trips"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            Trips
-          </Link>
-          <Link
-            href="/dashboard/accounts"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            Accounts
-          </Link>
-          <Link
-            href="/dashboard/debts"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            Debts
-          </Link>
-          <Link
-            href="/dashboard/emis"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            EMIs
-          </Link>
-          <Link
-            href="/dashboard/investments"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            Investments
-          </Link>
-          <Link
-            href="/dashboard/budget"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            Budget
-          </Link>
-          <Link
-            href="/dashboard/analytics"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-          >
-            Analytics
-          </Link>
+          {NAV_ITEMS.map((item) => {
+            const isActive =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                  isActive
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
           <button
