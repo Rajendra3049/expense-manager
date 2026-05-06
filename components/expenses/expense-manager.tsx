@@ -14,6 +14,8 @@ import {
 
 export function ExpenseManager() {
   const [listFilters, setListFilters] = useState<ExpenseListFilters>({});
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
 
   return (
     <div className="space-y-8">
@@ -26,17 +28,89 @@ export function ExpenseManager() {
         </p>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_minmax(0,280px)] lg:items-start">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:items-start">
         <div className="space-y-6">
           <RecurringDueProcessor />
-          <AddCategoryForm />
           <ExpenseForm />
-          <ExpenseFilters
-            key={expenseFiltersKey(listFilters)}
-            value={listFilters}
-            onChange={setListFilters}
-          />
-          <ExpenseList filters={listFilters} />
+          <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+            <button
+              type="button"
+              className="flex w-full cursor-pointer items-center justify-between rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-600"
+              aria-expanded={categoriesOpen}
+              aria-controls="manage-categories-panel"
+              onClick={() => setCategoriesOpen((v) => !v)}
+            >
+              <div>
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Manage categories
+                </p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Set up categories once or edit them occasionally.
+                </p>
+              </div>
+              <span
+                className={`ml-4 text-lg leading-none text-zinc-500 transition-transform duration-300 dark:text-zinc-400 ${
+                  categoriesOpen ? "rotate-180" : ""
+                }`}
+                aria-hidden="true"
+              >
+                ▾
+              </span>
+            </button>
+            <div
+              id="manage-categories-panel"
+              className={`grid overflow-hidden transition-all duration-300 ease-in-out ${
+                categoriesOpen
+                  ? "mt-4 grid-rows-[1fr] opacity-100"
+                  : "mt-0 grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="min-h-0">
+                <AddCategoryForm />
+              </div>
+            </div>
+          </section>
+          <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+            <button
+              type="button"
+              className="flex w-full cursor-pointer items-center justify-between rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-600"
+              aria-expanded={historyOpen}
+              aria-controls="expense-history-panel"
+              onClick={() => setHistoryOpen((v) => !v)}
+            >
+              <div>
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Expense history
+                </p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Filter and review your recorded expenses.
+                </p>
+              </div>
+              <span
+                className={`ml-4 text-lg leading-none text-zinc-500 transition-transform duration-300 dark:text-zinc-400 ${
+                  historyOpen ? "rotate-180" : ""
+                }`}
+                aria-hidden="true"
+              >
+                ▾
+              </span>
+            </button>
+            <div
+              id="expense-history-panel"
+              className={`grid overflow-hidden transition-all duration-300 ease-in-out ${
+                historyOpen ? "mt-4 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="min-h-0 space-y-4">
+                <ExpenseFilters
+                  key={expenseFiltersKey(listFilters)}
+                  value={listFilters}
+                  onChange={setListFilters}
+                />
+                <ExpenseList filters={listFilters} />
+              </div>
+            </div>
+          </section>
         </div>
         <MonthlyTotalCard />
       </div>

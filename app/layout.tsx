@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { AppToaster } from "@/components/providers/app-toaster";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
@@ -35,6 +36,7 @@ export default function RootLayout({
           <ThemeProvider>
             <AuthProvider>
               <div className="flex min-h-full flex-1 flex-col">{children}</div>
+              <AppToaster />
             </AuthProvider>
           </ThemeProvider>
         </QueryProvider>

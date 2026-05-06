@@ -13,6 +13,10 @@ import { tripKeys } from "@/features/trips/query-keys";
 import { analyticsKeys } from "@/features/analytics/query-keys";
 import { budgetKeys } from "@/features/budget/query-keys";
 import { categoryKeys, expenseKeys } from "@/features/expenses/query-keys";
+import {
+  normalizeCategoryName,
+  toCategoryDisplayName,
+} from "@/lib/expenses/category-name";
 import type { ExpenseListFilters } from "@/lib/expenses/filters";
 import { localMonthBounds, toLocalDateString } from "@/lib/expenses/dates";
 import type { CategoryRow, ExpenseListRow } from "@/lib/expenses/types";
@@ -292,9 +296,29 @@ export function useInsertCategoryMutation() {
       } = await supabase.auth.getUser();
       if (userError || !user) throw new Error("You must be signed in.");
 
+      const normalizedInput = normalizeCategoryName(input.name);
+      const displayName = toCategoryDisplayName(input.name);
+
+      const { data: existing, error: existingError } = await supabase
+        .from("categories")
+        .select("name")
+        .eq("user_id", user.id)
+        .eq("type", input.type);
+      if (existingError) throw existingError;
+
+      const duplicateExists = (existing ?? []).some(
+        (row: { name: string }) =>
+          normalizeCategoryName(row.name) === normalizedInput,
+      );
+      if (duplicateExists) {
+        throw new Error(
+          "Category already exists. Use a different name.",
+        );
+      }
+
       const { error } = await supabase.from("categories").insert({
         user_id: user.id,
-        name: input.name,
+        name: displayName,
         type: input.type,
       });
 

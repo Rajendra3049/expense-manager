@@ -2,7 +2,15 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useInsertCategoryMutation } from "@/features/expenses/use-expense-data";
+import { toast } from "sonner";
+import {
+  useCategoriesQuery,
+  useInsertCategoryMutation,
+} from "@/features/expenses/use-expense-data";
+import {
+  normalizeCategoryName,
+  toCategoryDisplayName,
+} from "@/lib/expenses/category-name";
 import {
   type CategoryFormValues,
   categoryFormSchema,
@@ -10,10 +18,13 @@ import {
 
 export function AddCategoryForm() {
   const insertCategory = useInsertCategoryMutation();
+  const { data: categories = [] } = useCategoriesQuery();
   const {
     register,
     handleSubmit,
     reset,
+    clearErrors,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
@@ -21,11 +32,38 @@ export function AddCategoryForm() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    await insertCategory.mutateAsync({
-      name: values.name,
-      type: values.type,
-    });
-    reset({ name: "", type: values.type });
+    const normalizedInput = normalizeCategoryName(values.name);
+    const displayName = toCategoryDisplayName(values.name);
+
+    const duplicateExists = categories.some(
+      (category) =>
+        category.type === values.type &&
+        normalizeCategoryName(category.name) === normalizedInput,
+    );
+    if (duplicateExists) {
+      setError("name", {
+        type: "manual",
+        message: "Category already exists (case-insensitive).",
+      });
+      toast.error(`"${displayName}" already exists.`);
+      return;
+    }
+
+    clearErrors("name");
+    try {
+      await insertCategory.mutateAsync({
+        name: displayName,
+        type: values.type,
+      });
+      toast.success(
+        `${values.type === "expense" ? "Expense" : "Income"} category "${displayName}" added.`,
+      );
+      reset({ name: "", type: values.type });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not add category.";
+      toast.error(message);
+    }
   });
 
   return (
@@ -44,9 +82,9 @@ export function AddCategoryForm() {
       </p>
       <form
         onSubmit={onSubmit}
-        className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
+        className="mt-3 grid gap-3 sm:grid-cols-[minmax(260px,360px)_auto_auto] sm:items-start sm:justify-start"
       >
-        <div className="min-w-0 flex-1 sm:max-w-xs">
+        <div className="min-w-0">
           <label htmlFor="cat-name" className="sr-only">
             Category name
           </label>
@@ -56,11 +94,15 @@ export function AddCategoryForm() {
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             {...register("name")}
           />
-          {errors.name ? (
-            <p className="mt-1 text-xs text-red-600" role="alert">
-              {errors.name.message}
-            </p>
-          ) : null}
+          <p
+            className={`mt-1 min-h-4 text-xs ${
+              errors.name ? "text-red-600" : "invisible"
+            }`}
+            role={errors.name ? "alert" : undefined}
+            aria-live="polite"
+          >
+            {errors.name?.message ?? "Name is required"}
+          </p>
         </div>
         <div>
           <label htmlFor="cat-type" className="sr-only">
@@ -83,13 +125,6 @@ export function AddCategoryForm() {
           {insertCategory.isPending ? "Adding…" : "Add category"}
         </button>
       </form>
-      {insertCategory.isError ? (
-        <p className="mt-2 text-xs text-red-600" role="alert">
-          {insertCategory.error instanceof Error
-            ? insertCategory.error.message
-            : "Could not add category."}
-        </p>
-      ) : null}
     </section>
   );
 }

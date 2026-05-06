@@ -22,7 +22,7 @@ export function MonthlyTotalCard() {
 
   return (
     <aside
-      className="h-fit rounded-xl border border-zinc-200 bg-gradient-to-b from-zinc-50 to-white p-5 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950 lg:sticky lg:top-6"
+      className="h-fit w-full rounded-xl border border-zinc-200 bg-gradient-to-b from-zinc-50 to-white p-5 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950 lg:sticky lg:top-6"
       aria-labelledby="month-total-heading"
     >
       <h2
