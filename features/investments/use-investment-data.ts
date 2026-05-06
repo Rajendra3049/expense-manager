@@ -78,9 +78,9 @@ export function useUpdateInvestmentValueMutation() {
 }
 
 export function formatInvestmentMoney(value: string | number): string {
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 2,
   }).format(num(value));
 }

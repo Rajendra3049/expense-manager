@@ -20,9 +20,9 @@ import {
 
 function formatMoney(value: string | number): string {
   const n = typeof value === "number" ? value : Number.parseFloat(value);
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 2,
   }).format(Number.isFinite(n) ? n : 0);
 }

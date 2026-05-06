@@ -26,9 +26,9 @@ const SLICE_COLORS = [
 ];
 
 function formatMoney(n: number): string {
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(n);
 }

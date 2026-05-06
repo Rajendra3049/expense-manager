@@ -12,9 +12,9 @@ import {
 import type { MonthlyTrendRow } from "@/features/analytics/types";
 
 function formatMoney(n: number): string {
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(n);
 }
@@ -63,7 +63,7 @@ export function MonthlyBarChart({ data }: MonthlyBarChartProps) {
           <YAxis
             tick={{ fontSize: 11 }}
             tickFormatter={(v) =>
-              new Intl.NumberFormat(undefined, {
+              new Intl.NumberFormat("en-IN", {
                 notation: "compact",
                 maximumFractionDigits: 1,
               }).format(Number(v))

@@ -40,9 +40,9 @@ function formatDisplayDate(isoDate: string): string {
 
 function formatMoney(value: string | number): string {
   const n = typeof value === "number" ? value : Number.parseFloat(String(value));
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 2,
   }).format(Number.isFinite(n) ? n : 0);
 }
