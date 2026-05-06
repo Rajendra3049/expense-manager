@@ -98,10 +98,12 @@ export function ExpenseManager() {
             <div
               id="expense-history-panel"
               className={`grid overflow-hidden transition-all duration-300 ease-in-out ${
-                historyOpen ? "mt-4 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
+                historyOpen
+                  ? "mt-4 grid-rows-[1fr] opacity-100"
+                  : "mt-0 grid-rows-[0fr] opacity-0"
               }`}
             >
-              <div className="min-h-0 space-y-4">
+              <div className="min-h-0 min-w-0 space-y-4">
                 <ExpenseFilters
                   key={expenseFiltersKey(listFilters)}
                   value={listFilters}

@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMemo } from "react";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import { useAccountsQuery } from "@/features/accounts/use-account-data";
 import { useCategoriesQuery } from "@/features/expenses/use-expense-data";
 import {
@@ -48,6 +49,7 @@ function formatMoney(value: string | number): string {
 }
 
 export function RecurringManager() {
+  const confirm = useConfirm();
   const { data: categories = [], isLoading: catLoading } = useCategoriesQuery();
   const { data: accounts = [], isLoading: accLoading } = useAccountsQuery();
   const expenseCategories = useMemo(
@@ -437,10 +439,15 @@ export function RecurringManager() {
                       <button
                         type="button"
                         disabled={remove.isPending}
-                        onClick={() => {
-                          const ok = window.confirm(
-                            "Delete this recurring rule? Past expenses stay in your ledger.",
-                          );
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: "Delete this recurring rule?",
+                            description:
+                              "Past expenses stay in your ledger.",
+                            confirmText: "Delete",
+                            cancelText: "Cancel",
+                            intent: "danger",
+                          });
                           if (!ok) return;
                           void remove.mutateAsync(r.id);
                         }}

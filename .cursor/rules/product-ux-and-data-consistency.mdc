@@ -1,0 +1,19 @@
+---
+description: Product UX and data consistency defaults from team preferences
+alwaysApply: true
+---
+
+# Product UX + Data Consistency
+
+- Keep primary user action prominent on each page (for Expenses page: adding expense first).
+- Secondary/advanced sections should be collapsible with clear affordance (label + chevron) and smooth expand/collapse animation.
+- Avoid native browser confirmations (`alert/confirm/prompt`) for product flows; use in-app modal dialogs.
+- Every clickable UI entity must show pointer cursor (`cursor-pointer` or equivalent).
+- Provide explicit success/error toast feedback for user-triggered mutations (create/update/delete/archive/process).
+- Validation UX must not break layout; reserve message space to avoid shift/distortion.
+- For money display in this app, always use INR with Indian locale formatting (`en-IN`, `currency: "INR"`).
+- Category names are case-insensitive for uniqueness (`groceries` == `Groceries`).
+- Normalize category display names to Title Case before save (e.g., `groceries` -> `Groceries`).
+- Apply duplicate checks at both UI and mutation/data layer where feasible.
+- Keep behavior and copy consistent across similar flows (delete/archive/settle/payment confirmations and toasts).
+- Prefer reusable shared utilities/providers for cross-cutting behavior (confirm provider, formatters, normalization helpers).

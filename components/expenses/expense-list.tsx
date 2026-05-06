@@ -1,6 +1,7 @@
 "use client";
 
 import { ExpenseListSkeleton } from "@/components/ui/expense-list-skeleton";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import { Spinner } from "@/components/ui/spinner";
 import {
   useDeleteExpenseMutation,
@@ -111,7 +112,7 @@ function ExpenseRowCard({
           <button
             type="button"
             disabled={isArchiving}
-            onClick={() => onArchiveToggle(row)}
+            onClick={() => void onArchiveToggle(row)}
             className="rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
           >
             {archived ? "Unarchive" : "Archive"}
@@ -137,6 +138,7 @@ type ExpenseListProps = {
 };
 
 export function ExpenseList({ filters }: ExpenseListProps) {
+  const confirm = useConfirm();
   const {
     data,
     isLoading,
@@ -150,21 +152,29 @@ export function ExpenseList({ filters }: ExpenseListProps) {
   const deleteExpense = useDeleteExpenseMutation();
   const setArchived = useSetExpenseArchivedMutation();
 
-  function handleDelete(id: string) {
-    const ok = window.confirm(
-      "Delete this expense? This cannot be undone.",
-    );
+  async function handleDelete(id: string) {
+    const ok = await confirm({
+      title: "Delete this expense?",
+      description: "This cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      intent: "danger",
+    });
     if (!ok) return;
     void deleteExpense.mutateAsync(id);
   }
 
-  function handleArchiveToggle(row: ExpenseListRow) {
+  async function handleArchiveToggle(row: ExpenseListRow) {
     const next = !row.archived_at;
-    const ok = window.confirm(
-      next
-        ? "Archive this expense? It will be hidden from default lists and totals."
-        : "Restore this expense from the archive?",
-    );
+    const ok = await confirm({
+      title: next ? "Archive this expense?" : "Restore this expense?",
+      description: next
+        ? "It will be hidden from default lists and totals."
+        : "This expense will be visible again in default lists and totals.",
+      confirmText: next ? "Archive" : "Restore",
+      cancelText: "Cancel",
+      intent: "default",
+    });
     if (!ok) return;
     void setArchived.mutateAsync({ id: row.id, archived: next });
   }
@@ -208,7 +218,7 @@ export function ExpenseList({ filters }: ExpenseListProps) {
 
   return (
     <section
-      className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+      className="w-full min-w-0 rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
       aria-labelledby="expense-list-heading"
     >
       <div className="flex flex-col gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-5">
@@ -238,15 +248,15 @@ export function ExpenseList({ filters }: ExpenseListProps) {
           <ExpenseRowCard
             key={row.id}
             row={row}
-            onDelete={handleDelete}
-            onArchiveToggle={handleArchiveToggle}
+            onDelete={(id) => void handleDelete(id)}
+            onArchiveToggle={(row) => void handleArchiveToggle(row)}
             isDeleting={deleteExpense.isPending}
             isArchiving={setArchived.isPending}
           />
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto md:block">
+      <div className="hidden max-w-full overflow-x-auto md:block">
         <table className="w-full min-w-[960px] text-left text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
             <tr>
@@ -314,7 +324,7 @@ export function ExpenseList({ filters }: ExpenseListProps) {
                     <button
                       type="button"
                       disabled={setArchived.isPending}
-                      onClick={() => handleArchiveToggle(row)}
+                      onClick={() => void handleArchiveToggle(row)}
                       className="rounded-lg border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
                     >
                       {archived ? "Unarchive" : "Archive"}
@@ -322,7 +332,7 @@ export function ExpenseList({ filters }: ExpenseListProps) {
                     <button
                       type="button"
                       disabled={deleteExpense.isPending}
-                      onClick={() => handleDelete(row.id)}
+                      onClick={() => void handleDelete(row.id)}
                       className="rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
                     >
                       Delete

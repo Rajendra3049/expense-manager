@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import {
   formatDebtAmount,
   useDebtsQuery,
@@ -46,6 +47,7 @@ function formatDisplayDate(iso: string): string {
 }
 
 export function DebtManager() {
+  const confirm = useConfirm();
   const { data: debts = [], isLoading, isError, error } = useDebtsQuery();
   const insertDebt = useInsertDebtMutation();
   const settleDebt = useSettleDebtMutation();
@@ -81,7 +83,12 @@ export function DebtManager() {
   });
 
   async function onSettle(id: string) {
-    const ok = window.confirm("Mark this debt as settled?");
+    const ok = await confirm({
+      title: "Mark this debt as settled?",
+      confirmText: "Mark settled",
+      cancelText: "Cancel",
+      intent: "default",
+    });
     if (!ok) return;
     try {
       await settleDebt.mutateAsync(id);

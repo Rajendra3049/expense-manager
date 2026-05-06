@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import {
   formatEmiMoney,
   useEmisQuery,
@@ -42,6 +43,7 @@ function progressPercent(
 }
 
 export function EmiManager() {
+  const confirm = useConfirm();
   const { data: emis = [], isLoading, isError, error } = useEmisQuery();
   const insertEmi = useInsertEmiMutation();
   const recordPayment = useRecordEmiPaymentMutation();
@@ -342,10 +344,15 @@ export function EmiManager() {
                         <button
                           type="button"
                           disabled={recordPayment.isPending}
-                          onClick={() => {
-                            const ok = window.confirm(
-                              "Record one EMI payment? Remaining balance and due date will update.",
-                            );
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: "Record one EMI payment?",
+                              description:
+                                "Remaining balance and due date will update.",
+                              confirmText: "Record payment",
+                              cancelText: "Cancel",
+                              intent: "default",
+                            });
                             if (!ok) return;
                             void recordPayment.mutateAsync(e);
                           }}

@@ -48,7 +48,7 @@ export function ExpenseFilters({ value, onChange }: ExpenseFiltersProps) {
 
   return (
     <section
-      className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
+      className="w-full min-w-0 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
       aria-labelledby="expense-filters-heading"
     >
       <h2

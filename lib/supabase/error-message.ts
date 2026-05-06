@@ -50,5 +50,24 @@ export function getSupabaseRequestErrorMessage(error: unknown): string {
     return "The database schema does not match this app. Run the SQL migrations in `supabase/migrations/` in numeric order so tables and columns match. See `supabase/README.md`.";
   }
 
+  if (
+    code === "23503" ||
+    message.includes("violates foreign key constraint")
+  ) {
+    if (message.includes("expenses_category_id_fkey")) {
+      return "This category is used by one or more expenses. Reassign or delete those expenses first.";
+    }
+    if (message.includes("recurring_expenses_category_id_fkey")) {
+      return "This category is used by recurring rules. Update or delete those rules first.";
+    }
+    if (
+      message.includes("category_budgets") &&
+      message.includes("category_id")
+    ) {
+      return "This category is linked to a budget. Remove it from budget limits first.";
+    }
+    return "This record is in use and cannot be deleted yet.";
+  }
+
   return message;
 }

@@ -20,7 +20,10 @@ import {
 import type { ExpenseListFilters } from "@/lib/expenses/filters";
 import { localMonthBounds, toLocalDateString } from "@/lib/expenses/dates";
 import type { CategoryRow, ExpenseListRow } from "@/lib/expenses/types";
-import { suppressGlobalQueryErrorMeta } from "@/lib/react-query/query-meta";
+import {
+  suppressGlobalMutationErrorMeta,
+  suppressGlobalQueryErrorMeta,
+} from "@/lib/react-query/query-meta";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export const EXPENSE_PAGE_SIZE = 25;
@@ -288,6 +291,7 @@ export function useInsertCategoryMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: suppressGlobalMutationErrorMeta,
     mutationFn: async (input: { name: string; type: "expense" | "income" }) => {
       const supabase = createBrowserSupabaseClient();
       const {
@@ -326,6 +330,93 @@ export function useInsertCategoryMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+export function useUpdateCategoryMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: suppressGlobalMutationErrorMeta,
+    mutationFn: async (input: {
+      id: string;
+      name: string;
+      type: "expense" | "income";
+    }) => {
+      const supabase = createBrowserSupabaseClient();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("You must be signed in.");
+
+      const normalizedInput = normalizeCategoryName(input.name);
+      const displayName = toCategoryDisplayName(input.name);
+
+      const { data: existing, error: existingError } = await supabase
+        .from("categories")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .eq("type", input.type);
+      if (existingError) throw existingError;
+
+      const duplicateExists = (existing ?? []).some(
+        (row: { id: string; name: string }) =>
+          row.id !== input.id &&
+          normalizeCategoryName(row.name) === normalizedInput,
+      );
+      if (duplicateExists) {
+        throw new Error(
+          "Category already exists. Use a different name.",
+        );
+      }
+
+      const { error } = await supabase
+        .from("categories")
+        .update({
+          name: displayName,
+          type: input.type,
+        })
+        .eq("id", input.id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      await queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+      await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
+    },
+  });
+}
+
+export function useDeleteCategoryMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: suppressGlobalMutationErrorMeta,
+    mutationFn: async (input: { id: string }) => {
+      const supabase = createBrowserSupabaseClient();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("You must be signed in.");
+
+      const { error } = await supabase
+        .from("categories")
+        .delete()
+        .eq("id", input.id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      await queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      await queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+      await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
     },
   });
 }
