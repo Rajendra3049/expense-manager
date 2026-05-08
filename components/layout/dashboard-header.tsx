@@ -7,10 +7,10 @@ import { useTheme } from "@/components/providers/theme-provider";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Expenses" },
+  { href: "/dashboard/debts", label: "Debts" },
   { href: "/dashboard/recurring", label: "Recurring" },
   { href: "/dashboard/trips", label: "Trips" },
   { href: "/dashboard/accounts", label: "Accounts" },
-  { href: "/dashboard/debts", label: "Debts" },
   { href: "/dashboard/emis", label: "EMIs" },
   { href: "/dashboard/investments", label: "Investments" },
   { href: "/dashboard/budget", label: "Budget" },
