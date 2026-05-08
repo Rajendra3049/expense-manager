@@ -112,6 +112,23 @@ export function useSaveBudgetMutation() {
       totalLimit: number;
       categoryLimits: Record<string, number>;
     }) => {
+      const normalizedTotalLimit = Math.max(0, Number(input.totalLimit) || 0);
+      const normalizedCategoryLimits = Object.fromEntries(
+        Object.entries(input.categoryLimits).map(([categoryId, cap]) => [
+          categoryId,
+          Math.max(0, Number(cap) || 0),
+        ]),
+      );
+      const sumOfCategoryLimits = Object.values(normalizedCategoryLimits).reduce(
+        (sum, cap) => sum + cap,
+        0,
+      );
+      if (sumOfCategoryLimits > normalizedTotalLimit) {
+        throw new Error(
+          "Total of category limits cannot exceed monthly total budget.",
+        );
+      }
+
       const supabase = createBrowserSupabaseClient();
       const {
         data: { user },
@@ -126,7 +143,7 @@ export function useSaveBudgetMutation() {
             user_id: user.id,
             year: input.year,
             month: input.month,
-            total_limit: input.totalLimit,
+            total_limit: normalizedTotalLimit,
           },
           { onConflict: "user_id,year,month" },
         )
@@ -142,7 +159,7 @@ export function useSaveBudgetMutation() {
         .eq("budget_id", budgetId);
       if (delError) throw delError;
 
-      const inserts = Object.entries(input.categoryLimits)
+      const inserts = Object.entries(normalizedCategoryLimits)
         .filter(([, cap]) => cap > 0)
         .map(([category_id, limit_amount]) => ({
           budget_id: budgetId,

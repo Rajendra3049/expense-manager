@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useSaveBudgetMutation } from "@/features/budget/use-budget-data";
 import type { CategoryRow } from "@/lib/expenses/types";
+import { getSupabaseRequestErrorMessage } from "@/lib/supabase/error-message";
 
 function num(v: string | number): number {
-  return typeof v === "number" ? v : Number.parseFloat(String(v));
+  const parsed = typeof v === "number" ? v : Number.parseFloat(String(v));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 type BudgetEditorFormProps = {
@@ -25,6 +28,7 @@ export function BudgetEditorForm({
 }: BudgetEditorFormProps) {
   const [totalInput, setTotalInput] = useState(initialTotal);
   const [categoryInputs, setCategoryInputs] = useState(initialCategoryLimits);
+  const [validationMessage, setValidationMessage] = useState("");
 
   const saveBudget = useSaveBudgetMutation();
 
@@ -36,19 +40,38 @@ export function BudgetEditorForm({
     return next;
   }, [categoryInputs, expenseCategories]);
 
-  function onSave() {
+  async function onSave() {
     const totalLimit = Math.max(0, num(totalInput));
     const categoryLimits: Record<string, number> = {};
+    let totalCategoryLimit = 0;
     for (const [id, raw] of Object.entries(mergedCategoryInputs)) {
-      const v = num(raw);
+      const v = Math.max(0, num(raw));
       if (v > 0) categoryLimits[id] = v;
+      totalCategoryLimit += v;
     }
-    void saveBudget.mutateAsync({
-      year,
-      month,
-      totalLimit,
-      categoryLimits,
-    });
+
+    if (totalCategoryLimit > totalLimit) {
+      setValidationMessage(
+        "Total of category limits cannot exceed monthly total budget.",
+      );
+      toast.error(
+        "Category limits exceed monthly total. Reduce limits or increase total budget.",
+      );
+      return;
+    }
+
+    setValidationMessage("");
+    try {
+      await saveBudget.mutateAsync({
+        year,
+        month,
+        totalLimit,
+        categoryLimits,
+      });
+      toast.success("Budget saved successfully.");
+    } catch (mutationError) {
+      toast.error(getSupabaseRequestErrorMessage(mutationError));
+    }
   }
 
   return (
@@ -128,19 +151,20 @@ export function BudgetEditorForm({
           type="button"
           disabled={saveBudget.isPending}
           onClick={() => void onSave()}
-          className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="cursor-pointer rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           {saveBudget.isPending ? "Saving…" : "Save budget"}
         </button>
       </div>
 
-      {saveBudget.isError ? (
-        <p className="mt-3 text-sm text-red-600" role="alert">
-          {saveBudget.error instanceof Error
-            ? saveBudget.error.message
-            : "Save failed."}
-        </p>
-      ) : null}
+      <p className="mt-3 min-h-5 text-sm text-red-600" role="alert">
+        {validationMessage ||
+          (saveBudget.isError
+            ? saveBudget.error instanceof Error
+              ? saveBudget.error.message
+              : "Save failed."
+            : "")}
+      </p>
     </section>
   );
 }
