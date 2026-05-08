@@ -2,6 +2,8 @@
 
 SQL migrations in **`migrations/`** define tables, indexes, and **RLS** for the Expense Manager backend.
 
+For the full migration-by-migration technical reference, see [`docs/database-and-migrations.md`](../docs/database-and-migrations.md).
+
 ## Apply a migration
 
 **Option A — Dashboard (quick)**  

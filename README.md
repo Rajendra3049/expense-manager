@@ -1,89 +1,107 @@
 # Expense Manager
 
-A responsive personal finance web app built with **Next.js (App Router)**, **Supabase** (PostgreSQL, Auth, Row Level Security), **Tailwind CSS**, and **TanStack Query**. The roadmap and phased delivery are described in [Implementation_plan.md](./Implementation_plan.md).
+A full-stack personal finance web app built with Next.js and Supabase. It supports expense tracking, budgets, analytics, accounts, debts, EMI/investments, recurring entries, trips, and ledger-style history through phased database migrations.
 
-## Current status (Phase 0–1 MVP)
+## Documentation Map
 
-Completed so far:
+Project documentation is organized under `docs/`:
 
-- Next.js 16 + TypeScript + Tailwind v4 + ESLint
-- Supabase browser and server clients (`@supabase/ssr`), env via `SUPABASE_URL` / `SUPABASE_ANON_KEY` (see [`.env.example`](./.env.example))
-- Middleware session refresh with `getClaims()`, protected `/dashboard` routes, and server layout guard
-- Email/password **login** and **signup** with Zod + React Hook Form, client auth context (`useAuth`), and sign-out
-- **Phase 1:** SQL migrations for `categories` / `expenses` + RLS ([`supabase/migrations/`](./supabase/migrations/)); dashboard **expense form**, **list** (newest first), **delete** (with confirm), **monthly total**, and minimal **category** creation (see [`components/expenses/`](./components/expenses/README.md))
-- **Phase 2:** `budgets` + `category_budgets` migration; **`/dashboard/budget`** for monthly total + per-category caps; spending vs limits with **80% / 100%** warnings; **expense filters** (date range + category) on the expenses view
-- **Phase 3:** Analytics RPC migration; **`/dashboard/analytics`** with **Recharts** pie (category totals for a date range) and bar chart (last 12 months from `monthly_expense_trends`)
+- [`docs/README.md`](./docs/README.md) - Documentation index and reading paths
+- [`docs/getting-started.md`](./docs/getting-started.md) - Local setup, env, first-run checklist
+- [`docs/architecture.md`](./docs/architecture.md) - App architecture, data flow, auth boundaries
+- [`docs/database-and-migrations.md`](./docs/database-and-migrations.md) - Schema and migration reference (Phase 1-11)
+- [`docs/features.md`](./docs/features.md) - Feature-by-feature product and technical behavior
+- [`docs/development-workflow.md`](./docs/development-workflow.md) - Coding standards, quality checks, release checklist
+- [`docs/troubleshooting.md`](./docs/troubleshooting.md) - Common runtime/database/auth issues
+- [`docs/templates/feature-doc-template.md`](./docs/templates/feature-doc-template.md) - Template for documenting new features
 
-**Next:** Phase 4 accounts or further analytics per [Implementation_plan.md](./Implementation_plan.md).
+Legacy folder READMEs are kept in place for quick local context:
 
-## Tech stack
+- [`app/README.md`](./app/README.md)
+- [`components/README.md`](./components/README.md)
+- [`features/README.md`](./features/README.md)
+- [`lib/README.md`](./lib/README.md)
+- [`supabase/README.md`](./supabase/README.md)
 
-| Area        | Choice                                      |
-| ----------- | ------------------------------------------- |
-| Framework   | Next.js 16 (App Router, Turbopack dev)      |
-| Backend     | Supabase (no custom API server)             |
-| Auth        | Supabase Auth (email/password)              |
-| Styling     | Tailwind CSS v4                           |
-| Data/cache  | TanStack React Query v5                     |
-| Forms       | React Hook Form + Zod                      |
-| HTTP helper | Axios (`lib/http.ts`) for non-Supabase calls |
+## Tech Stack
 
-## Requirements
+- Framework: Next.js 16 (App Router)
+- Language: TypeScript
+- Styling: Tailwind CSS v4
+- Data layer: Supabase (PostgreSQL + Auth + RLS + SQL RPCs)
+- Client cache/state: TanStack React Query v5
+- Forms/validation: React Hook Form + Zod
+- Charts: Recharts
+- Notifications: Sonner
 
-- **Node.js** 20+ (LTS recommended)
-- A **Supabase** project with **Email** provider enabled (Authentication → Providers → Email)
+## Quick Start
 
-## Environment variables
+1. Install dependencies:
 
-Copy `.env.example` to `.env.local` and set:
+```bash
+npm install
+```
 
-- `SUPABASE_URL` — Project URL (Settings → API)
-- `SUPABASE_ANON_KEY` — anon / public key (Settings → API)
+2. Configure env:
 
-`next.config.ts` maps these into the client bundle where needed. Never commit `.env.local`.
+```bash
+cp .env.example .env.local
+```
+
+Set:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+(`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are also supported for compatibility.)
+
+3. Apply migrations to Supabase (SQL Editor or CLI).
+4. Start dev server:
+
+```bash
+npm run dev
+```
+
+5. Open `http://localhost:3000`.
+
+For full setup details, see [`docs/getting-started.md`](./docs/getting-started.md).
 
 ## Scripts
 
 ```bash
-npm install    # dependencies
-npm run dev    # http://localhost:3000
-npm run build  # production build
-npm run start  # run production server
-npm run lint   # ESLint
+npm run dev
+npm run build
+npm run start
+npm run lint
 ```
 
-## Repository layout
+## Product Scope (Current)
 
-| Path | Purpose |
-| ---- | ------- |
-| [`app/`](./app/README.md) | Routes, layouts, global styles |
-| [`components/`](./components/README.md) | UI: auth forms, layout chrome, React providers |
-| [`lib/`](./lib/README.md) | Supabase clients, auth helpers, shared HTTP client |
-| [`features/`](./features/README.md) | Reserved for feature-sliced modules (e.g. expenses) |
-| [`public/`](./public/README.md) | Static assets served from `/` |
-| `middleware.ts` | Auth cookie refresh + redirect rules for `/dashboard` |
+Implemented phases:
 
-## Routes (high level)
+- Phase 1: Categories + expenses with RLS
+- Phase 2: Monthly budgets + category budgets
+- Phase 3: Analytics RPCs
+- Phase 4: Accounts + expense-account relation + balance triggers
+- Phase 5: Debts (legacy give/take table)
+- Phase 6: EMI and investments
+- Phase 7: Trips + recurring expenses
+- Phase 8: Tags and archive support
+- Phase 9: Account adjustments and recurring account adjustments
+- Phase 10: Debt khata accounts + entry history + balance recalculation
+- Phase 11: Trip budget history + trip budget recalculation
 
-| Path | Access |
-| ---- | ------ |
-| `/` | Public landing |
-| `/login`, `/signup` | Public; signed-in users are redirected to the dashboard (or safe `?next=` target) |
-| `/dashboard` | Authenticated only (middleware + server layout) |
+See [`docs/database-and-migrations.md`](./docs/database-and-migrations.md) and [`docs/features.md`](./docs/features.md) for details.
 
-## Security notes
+## Security Model
 
-- **Anon key** in the browser is expected; protect data with **RLS** on every table (Phase 1+).
-- Middleware and server checks use **`getClaims()`** / **`getUser()`** rather than trusting unverified session payloads from cookies alone for sensitive logic.
-- **`safeNextPath()`** (`lib/auth/redirect.ts`) restricts post-login redirects to same-origin relative paths.
+- Row Level Security is enabled per user-scoped table.
+- Auth checks are enforced in middleware plus server-side route guards.
+- Redirect sanitization prevents open redirect via `safeNextPath`.
+- Browser uses anon key by design; data protection relies on RLS policies.
 
-## Deployment (outline)
+## Deployment
 
-1. Push to GitHub (or your Git host).
-2. Connect the repo to **Vercel** and set the same env vars as in `.env.local`.
-3. In Supabase, set **Authentication → URL configuration** (Site URL and redirect URLs) to match your production domain.
+Deploy on Vercel with the same environment variables as local. Ensure Supabase Auth URL configuration includes production site URL and redirect URLs.
 
-## Learn more
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Supabase Auth + Next.js SSR](https://supabase.com/docs/guides/auth/server-side/nextjs)
+Detailed steps: [`docs/getting-started.md`](./docs/getting-started.md).
