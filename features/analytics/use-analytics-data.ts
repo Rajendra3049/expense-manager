@@ -2,7 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { analyticsKeys } from "@/features/analytics/query-keys";
-import type { CategoryTotalRow, MonthlyTrendRow } from "@/features/analytics/types";
+import type {
+  AnalyticsExpenseRow,
+  CategoryTotalRow,
+  MonthlyTrendRow,
+} from "@/features/analytics/types";
 import { suppressGlobalQueryErrorMeta } from "@/lib/react-query/query-meta";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -58,5 +62,55 @@ export function useMonthlyTrendsQuery(months: number) {
         total_amount: num(r.total_amount),
       }));
     },
+  });
+}
+
+export function useAnalyticsExpenseRowsQuery(from: string, to: string) {
+  return useQuery({
+    meta: suppressGlobalQueryErrorMeta,
+    queryKey: analyticsKeys.expenseRows(from, to),
+    queryFn: async (): Promise<AnalyticsExpenseRow[]> => {
+      const supabase = createBrowserSupabaseClient();
+      const start = from <= to ? from : to;
+      const end = from <= to ? to : from;
+      const { data, error } = await supabase
+        .from("expenses")
+        .select(
+          `
+          id,
+          amount,
+          date,
+          category_id,
+          note,
+          categories ( name )
+        `,
+        )
+        .is("archived_at", null)
+        .gte("date", start)
+        .lte("date", end)
+        .order("date", { ascending: true });
+
+      if (error) throw error;
+      const rows = (data ?? []) as Record<string, unknown>[];
+      return rows.map((r) => {
+        const categoryObj = r.categories as
+          | { name?: unknown }
+          | { name?: unknown }[]
+          | null
+          | undefined;
+        const categoryName = Array.isArray(categoryObj)
+          ? String(categoryObj[0]?.name ?? "—")
+          : String(categoryObj?.name ?? "—");
+        return {
+          id: String(r.id),
+          amount: num(r.amount),
+          date: String(r.date),
+          category_id: String(r.category_id),
+          category_name: categoryName,
+          note: typeof r.note === "string" ? r.note : null,
+        };
+      });
+    },
+    enabled: Boolean(from && to),
   });
 }
