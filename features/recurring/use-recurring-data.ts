@@ -16,6 +16,7 @@ import {
   advanceRecurringNextDate,
   toLocalDateString,
 } from "@/lib/expenses/dates";
+import { suppressGlobalMutationErrorMeta } from "@/lib/react-query/query-meta";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 const MAX_CATCH_UP_PER_RULE = 500;
@@ -167,7 +168,8 @@ export function useProcessDueRecurringMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    meta: suppressGlobalMutationErrorMeta,
+    mutationFn: async (): Promise<{ addedExpenses: number }> => {
       const supabase = createBrowserSupabaseClient();
       const {
         data: { user },
@@ -176,6 +178,7 @@ export function useProcessDueRecurringMutation() {
       if (userError || !user) throw new Error("You must be signed in.");
 
       const today = toLocalDateString(new Date());
+      let addedExpenses = 0;
 
       const { data: rules, error: listError } = await supabase
         .from("recurring_expenses")
@@ -205,6 +208,7 @@ export function useProcessDueRecurringMutation() {
             note: expenseNote.slice(0, 2000),
           });
           if (insErr) throw insErr;
+          addedExpenses += 1;
 
           const newNext = advanceRecurringNextDate(
             next,
@@ -218,6 +222,8 @@ export function useProcessDueRecurringMutation() {
           next = newNext;
         }
       }
+
+      return { addedExpenses };
     },
     onSuccess: async () => {
       void queryClient.invalidateQueries({ queryKey: recurringKeys.all });

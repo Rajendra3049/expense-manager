@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useConfirm } from "@/components/providers/confirm-provider";
 import { useAccountsQuery } from "@/features/accounts/use-account-data";
 import { useCategoriesQuery } from "@/features/expenses/use-expense-data";
@@ -166,16 +167,26 @@ export function RecurringManager() {
         <button
           type="button"
           disabled={processDue.isPending}
-          onClick={() => void processDue.mutateAsync()}
+          onClick={async () => {
+            try {
+              const result = await processDue.mutateAsync();
+              if (result.addedExpenses > 0) {
+                toast.success(
+                  `Added ${result.addedExpenses} due recurring ${
+                    result.addedExpenses === 1 ? "expense" : "expenses"
+                  }.`,
+                );
+              } else {
+                toast.info("No action taken. No recurring expenses are due today.");
+              }
+            } catch (error) {
+              toast.error(getSupabaseRequestErrorMessage(error));
+            }
+          }}
           className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           {processDue.isPending ? "Processing…" : "Run due recurring now"}
         </button>
-        {processDue.isError ? (
-          <p className="text-sm text-red-600">
-            {getSupabaseRequestErrorMessage(processDue.error)}
-          </p>
-        ) : null}
       </div>
 
       <section

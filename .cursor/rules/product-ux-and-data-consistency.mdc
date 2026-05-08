@@ -10,6 +10,7 @@ alwaysApply: true
 - Avoid native browser confirmations (`alert/confirm/prompt`) for product flows; use in-app modal dialogs.
 - Every clickable UI entity must show pointer cursor (`cursor-pointer` or equivalent).
 - Provide explicit success/error toast feedback for user-triggered mutations (create/update/delete/archive/process).
+- After API calls or user actions that require acknowledgement, always show a clear toast outcome (success, info, warning, or error as appropriate), and avoid duplicate toasts for the same event.
 - Validation UX must not break layout; reserve message space to avoid shift/distortion.
 - For money display in this app, always use INR with Indian locale formatting (`en-IN`, `currency: "INR"`).
 - Category names are case-insensitive for uniqueness (`groceries` == `Groceries`).
