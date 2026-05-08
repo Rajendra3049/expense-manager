@@ -183,7 +183,7 @@ export function RecurringManager() {
               toast.error(getSupabaseRequestErrorMessage(error));
             }
           }}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="cursor-pointer rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           {processDue.isPending ? "Processing…" : "Run due recurring now"}
         </button>
@@ -213,7 +213,7 @@ export function RecurringManager() {
             <input
               id="rec-label"
               type="text"
-              placeholder="e.g. Rent, Netflix"
+              placeholder="e.g. Apartment Rent"
               className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               {...register("label")}
             />
@@ -385,7 +385,7 @@ export function RecurringManager() {
                 updateRule.isPending ||
                 expenseCategories.length === 0
               }
-              className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[140px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="w-full cursor-pointer rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[140px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               {insertRule.isPending || updateRule.isPending
                 ? "Saving…"
@@ -397,7 +397,7 @@ export function RecurringManager() {
               <button
                 type="button"
                 onClick={onCancelEdit}
-                className="mt-2 w-full rounded-lg border border-zinc-300 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 sm:ml-2 sm:mt-0 sm:w-auto sm:min-w-[120px] dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                className="mt-2 w-full cursor-pointer rounded-lg border border-zinc-300 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 sm:ml-2 sm:mt-0 sm:w-auto sm:min-w-[120px] dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
               >
                 Cancel edit
               </button>
@@ -503,7 +503,7 @@ export function RecurringManager() {
                         type="button"
                         disabled={updateRule.isPending}
                         onClick={() => onEditRule(r)}
-                        className="rounded-lg border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                        className="cursor-pointer rounded-lg border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
                       >
                         Edit
                       </button>
@@ -516,7 +516,7 @@ export function RecurringManager() {
                             isActive: !r.is_active,
                           })
                         }
-                        className="rounded-lg border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                        className="cursor-pointer rounded-lg border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
                       >
                         {r.is_active ? "Pause" : "Resume"}
                       </button>
@@ -535,7 +535,7 @@ export function RecurringManager() {
                           if (!ok) return;
                           void remove.mutateAsync(r.id);
                         }}
-                        className="rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
+                        className="cursor-pointer rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
                       >
                         Delete
                       </button>

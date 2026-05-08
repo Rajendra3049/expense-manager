@@ -229,7 +229,7 @@ export function ExpenseForm() {
           <input
             id="exp-tags"
             type="text"
-            placeholder="e.g. groceries, weekly"
+            placeholder="e.g. household, weekly"
             className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             {...register("tags")}
           />
@@ -250,7 +250,7 @@ export function ExpenseForm() {
           <textarea
             id="exp-note"
             rows={2}
-            placeholder="What was this for?"
+            placeholder="Add context for this expense"
             className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             {...register("note")}
           />
@@ -269,7 +269,7 @@ export function ExpenseForm() {
               insertExpense.isPending ||
               expenseCategories.length === 0
             }
-            className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[140px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="w-full cursor-pointer rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[140px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
             {insertExpense.isPending ? "Saving…" : "Save expense"}
           </button>

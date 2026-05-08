@@ -444,7 +444,7 @@ export function AccountManager() {
             <input
               id="acc-name"
               type="text"
-              placeholder="e.g. Checking"
+              placeholder="e.g. Primary Bank Account"
               className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               {...register("name")}
             />

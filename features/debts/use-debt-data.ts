@@ -205,6 +205,35 @@ export function useUpdateDebtDueDateMutation() {
   });
 }
 
+export function useDeleteDebtAccountMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: suppressGlobalMutationErrorMeta,
+    mutationFn: async (id: string) => {
+      const { supabase, userId } = await getSignedInUserId();
+
+      const { error: entriesError } = await supabase
+        .from("debt_account_entries")
+        .delete()
+        .eq("debt_account_id", id)
+        .eq("user_id", userId);
+      if (entriesError) throw entriesError;
+
+      const { error: accountError } = await supabase
+        .from("debt_accounts")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", userId);
+      if (accountError) throw accountError;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: debtKeys.all });
+      await queryClient.invalidateQueries({ queryKey: [...debtKeys.all, "entries"] });
+    },
+  });
+}
+
 export function formatDebtBalance(params: { amount: string | number; type: "given" | "taken" }) {
   const sign = params.type === "given" ? "To Recover" : "To Pay";
   return `${sign}: ${new Intl.NumberFormat("en-IN", {

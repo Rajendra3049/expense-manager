@@ -120,7 +120,7 @@ export function EmiManager() {
             <input
               id="emi-name"
               type="text"
-              placeholder="e.g. Car loan"
+              placeholder="e.g. Vehicle Loan Account"
               className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               {...register("name")}
             />
@@ -224,7 +224,7 @@ export function EmiManager() {
             <button
               type="submit"
               disabled={isSubmitting || insertEmi.isPending}
-              className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[140px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="w-full cursor-pointer rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[140px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               {insertEmi.isPending ? "Saving…" : "Add EMI"}
             </button>
@@ -360,7 +360,7 @@ export function EmiManager() {
                             if (!ok) return;
                             void recordPayment.mutateAsync(e);
                           }}
-                          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                          className="cursor-pointer rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
                         >
                           {recordPayment.isPending
                             ? "Updating…"

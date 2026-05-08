@@ -8,6 +8,7 @@ import { useConfirm } from "@/components/providers/confirm-provider";
 import {
   formatDebtAmount,
   formatDebtBalance,
+  useDeleteDebtAccountMutation,
   useDebtEntriesQuery,
   useDebtsQuery,
   useInsertDebtAccountMutation,
@@ -26,13 +27,13 @@ import {
 import { getSupabaseRequestErrorMessage } from "@/lib/supabase/error-message";
 
 const TYPE_LABELS: Record<DebtAccountInput["type"], string> = {
-  given: "I gave money (to recover)",
-  taken: "I took money (to pay)",
+  given: "Money Lent (Receivable)",
+  taken: "Money Borrowed (Payable)",
 };
 
 const ENTRY_TYPE_LABELS: Record<DebtEntryInput["entryType"], string> = {
-  borrow: "Borrow/Add",
-  payment: "Payment/Reduce",
+  borrow: "Add Borrowing",
+  payment: "Record Payment",
 };
 
 function statusBadge(settled: boolean) {
@@ -117,6 +118,7 @@ export function DebtKhataManager() {
   const insertDebtEntry = useInsertDebtEntryMutation();
   const settleDebtAccount = useSettleDebtAccountMutation();
   const updateDebtDueDate = useUpdateDebtDueDateMutation();
+  const deleteDebtAccount = useDeleteDebtAccountMutation();
 
   const accountForm = useForm<DebtAccountInput, unknown, DebtAccountValues>({
     resolver: zodResolver(debtAccountSchema),
@@ -224,6 +226,24 @@ export function DebtKhataManager() {
     }
   }
 
+  async function onDeleteAccount(accountId: string, accountName: string) {
+    const ok = await confirm({
+      title: `Delete "${accountName}"?`,
+      description:
+        "This will permanently delete this debt account and all its entries. This action cannot be undone.",
+      confirmText: "Delete account",
+      cancelText: "Cancel",
+      intent: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await deleteDebtAccount.mutateAsync(accountId);
+      toast.success(`Debt account "${accountName}" deleted.`);
+    } catch (mutationError) {
+      toast.error(getSupabaseRequestErrorMessage(mutationError));
+    }
+  }
+
   return (
     <div className="space-y-8">
       <header className="space-y-1">
@@ -322,16 +342,42 @@ export function DebtKhataManager() {
                     <td className="px-4 py-3 sm:px-5">{statusBadge(account.is_settled)}</td>
                     <td className="px-4 py-3 sm:px-5">
                       {!account.is_settled ? (
+                        <div className="flex items-center gap-2">
+                          <span
+                            title={
+                              Number(account.balance) !== 0
+                                ? "Available only when account balance is exactly INR 0."
+                                : undefined
+                            }
+                            className={Number(account.balance) !== 0 ? "cursor-help" : ""}
+                          >
+                            <button
+                              type="button"
+                              disabled={settleDebtAccount.isPending || Number(account.balance) !== 0}
+                              onClick={() => void onSettle(account.id, account.name)}
+                              className="cursor-pointer rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                            >
+                              Mark settled
+                            </button>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => void onDeleteAccount(account.id, account.name)}
+                            disabled={deleteDebtAccount.isPending}
+                            className="cursor-pointer rounded-lg border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/30"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           type="button"
-                          disabled={settleDebtAccount.isPending || Number(account.balance) !== 0}
-                          onClick={() => void onSettle(account.id, account.name)}
-                          className="cursor-pointer rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                          onClick={() => void onDeleteAccount(account.id, account.name)}
+                          disabled={deleteDebtAccount.isPending}
+                          className="cursor-pointer rounded-lg border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/30"
                         >
-                          Mark settled
+                          Delete
                         </button>
-                      ) : (
-                        <span className="text-xs text-zinc-400">-</span>
                       )}
                     </td>
                   </tr>
@@ -360,7 +406,7 @@ export function DebtKhataManager() {
             <input
               id="debt-name"
               type="text"
-              placeholder="e.g. Mayank's loan"
+              placeholder="e.g. Vendor Advance Account"
               className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               {...accountForm.register("name")}
             />

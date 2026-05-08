@@ -291,7 +291,7 @@ export function TripManager() {
             <input
               id="trip-name"
               type="text"
-              placeholder="e.g. Japan spring 2026"
+              placeholder="e.g. Singapore Work Trip 2026"
               className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               {...register("name")}
             />
