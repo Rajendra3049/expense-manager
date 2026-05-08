@@ -89,8 +89,8 @@ export function EmiManager() {
           EMIs
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Track loan totals, monthly installment, outstanding balance, and next
-          due date. Record a payment to reduce the balance and roll the due date
+          Track loan totals, monthly installments, outstanding balances, and due
+          dates. Record each payment to reduce balance and move the due date
           forward.
         </p>
       </header>
@@ -105,6 +105,10 @@ export function EmiManager() {
         >
           New EMI
         </h2>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Add loan details once and keep the repayment progress updated over
+          time.
+        </p>
         <form onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label

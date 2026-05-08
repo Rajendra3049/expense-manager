@@ -24,7 +24,8 @@ export function ExpenseManager() {
           Expenses
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Add categories, record spending, and track this month&apos;s total.
+          Capture daily spending quickly, organize categories, and monitor this
+          month&apos;s total in one place.
         </p>
       </header>
 

@@ -299,8 +299,8 @@ export function AccountManager() {
           Accounts
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Track balances per wallet or bank account. Expenses linked to an
-          account update its balance automatically.
+          Track balances across cash, wallet, and bank accounts. Linked expenses
+          update balances automatically.
         </p>
       </header>
 

@@ -231,7 +231,8 @@ export function DebtKhataManager() {
           Debts
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Khata-style debt accounts per person, with running balance, due date, and full history.
+          Manage person-wise debt ledgers with running balances, due dates, and
+          complete transaction history.
         </p>
       </header>
 
@@ -244,10 +245,10 @@ export function DebtKhataManager() {
             id="debt-accounts-list-heading"
             className="text-base font-semibold text-zinc-900 dark:text-zinc-50"
           >
-            Debt accounts (priority)
+            Debt accounts
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Active accounts come first, sorted by nearest due date.
+            Active accounts appear first and are sorted by nearest due date.
           </p>
         </div>
 
@@ -344,7 +345,7 @@ export function DebtKhataManager() {
       <CollapsibleSection
         id="new-debt-account-panel"
         title="New debt account"
-        description="Create a khata account for a person and set opening amount."
+        description="Create a debt account for a person with an opening balance."
         open={newDebtOpen}
         onToggle={() => setNewDebtOpen((v) => !v)}
       >

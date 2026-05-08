@@ -261,7 +261,8 @@ export function TripManager() {
           Trips
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Track trips with budget, budget history, and quick edit/delete controls.
+          Plan trips with dates and budgets, then track every budget change with
+          a complete history.
         </p>
       </header>
 
@@ -275,6 +276,10 @@ export function TripManager() {
         >
           New trip
         </h2>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Add the trip details first, then link related expenses from the
+          Expenses page.
+        </p>
         <form onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label

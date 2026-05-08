@@ -158,8 +158,8 @@ export function RecurringManager() {
           Recurring expenses
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Rules run automatically when you open the Expenses page. Use the
-          button below to process due items without leaving this screen.
+          Create recurring rules once and auto-add due expenses. You can also
+          process due items directly from this page.
         </p>
       </header>
 
@@ -199,6 +199,9 @@ export function RecurringManager() {
         >
           {editingRuleId ? "Edit rule" : "New rule"}
         </h2>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Define frequency, amount, and due date for automatic expense entries.
+        </p>
         <form onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label
@@ -422,6 +425,9 @@ export function RecurringManager() {
           >
             Your rules
           </h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Review status, update details, pause, resume, or delete rules.
+          </p>
         </div>
 
         {isLoading ? (

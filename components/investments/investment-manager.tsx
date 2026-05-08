@@ -143,8 +143,8 @@ export function InvestmentManager() {
           Investments
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Log holdings and refresh market values as they change. Totals below
-          sum <span className="font-medium">current value</span> only.
+          Track your holdings and update current market values anytime. Portfolio
+          totals below use <span className="font-medium">current value</span>.
         </p>
       </header>
 
@@ -158,6 +158,9 @@ export function InvestmentManager() {
         >
           Add investment
         </h2>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Start with the instrument name, type, and latest value.
+        </p>
         <form onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-1">
             <label

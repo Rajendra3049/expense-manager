@@ -53,8 +53,8 @@ export function BudgetManager() {
           Budgets
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Set a monthly total and optional per-category caps. Warnings appear
-          when you reach 80% or 100% of a limit.
+          Set monthly budget limits for total spend and categories. Get early
+          warnings at 80% and alerts at 100% usage.
         </p>
       </header>
 

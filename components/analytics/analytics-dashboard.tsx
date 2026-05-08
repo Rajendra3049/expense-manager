@@ -285,8 +285,8 @@ export function AnalyticsDashboard() {
           Analytics
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          High-signal spending intelligence with trend, concentration, behavior,
-          and run-rate insights.
+          Understand spending trends, category mix, daily behavior, and projected
+          run-rate from one analytics view.
         </p>
       </header>
 
