@@ -20,3 +20,7 @@ alwaysApply: true
 - Apply duplicate checks at both UI and mutation/data layer where feasible.
 - Keep behavior and copy consistent across similar flows (delete/archive/settle/payment confirmations and toasts).
 - Prefer reusable shared utilities/providers for cross-cutting behavior (confirm provider, formatters, normalization helpers).
+- Use professional, production-grade microcopy across UI labels/placeholders/tooltips; avoid casual/personal examples (e.g., person names or slang).
+- Placeholder examples must be domain-relevant and professional (e.g., `Primary Bank Account`, `Vendor Advance Account`, `Apartment Rent`), not informal text.
+- If any CTA is disabled, always provide a clear reason via tooltip, helper text, or inline hint (do not leave disabled actions unexplained).
+- For disabled actions, include accessible guidance as well (`title`, `aria-describedby`, or equivalent) so users can understand what to do next.
