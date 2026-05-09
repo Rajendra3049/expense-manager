@@ -55,7 +55,6 @@ export function AddCategoryForm() {
         type: "manual",
         message: "Category already exists (case-insensitive).",
       });
-      toast.error(`"${displayName}" already exists.`);
       return;
     }
 

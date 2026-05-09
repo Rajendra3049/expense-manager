@@ -101,7 +101,6 @@ export function TripManager() {
         type: "manual",
         message: "Trip already exists (case-insensitive).",
       });
-      toast.error(`"${values.name}" already exists.`);
       return;
     }
     clearErrors("name");
@@ -178,7 +177,6 @@ export function TripManager() {
         type: "manual",
         message: "Trip already exists (case-insensitive).",
       });
-      toast.error(`"${name}" already exists.`);
       return;
     }
     try {

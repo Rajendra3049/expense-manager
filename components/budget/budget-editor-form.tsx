@@ -40,7 +40,7 @@ export function BudgetEditorForm({
     return next;
   }, [categoryInputs, expenseCategories]);
 
-  async function onSave() {
+  function onSave() {
     const totalLimit = Math.max(0, num(totalInput));
     const categoryLimits: Record<string, number> = {};
     let totalCategoryLimit = 0;
@@ -54,24 +54,23 @@ export function BudgetEditorForm({
       setValidationMessage(
         "Total of category limits cannot exceed monthly total budget.",
       );
-      toast.error(
-        "Category limits exceed monthly total. Reduce limits or increase total budget.",
-      );
       return;
     }
 
     setValidationMessage("");
-    try {
-      await saveBudget.mutateAsync({
+    saveBudget.mutate(
+      {
         year,
         month,
         totalLimit,
         categoryLimits,
-      });
-      toast.success("Budget saved successfully.");
-    } catch (mutationError) {
-      toast.error(getSupabaseRequestErrorMessage(mutationError));
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success("Budget saved successfully.");
+        },
+      },
+    );
   }
 
   return (
@@ -160,9 +159,7 @@ export function BudgetEditorForm({
       <p className="mt-3 min-h-5 text-sm text-red-600" role="alert">
         {validationMessage ||
           (saveBudget.isError
-            ? saveBudget.error instanceof Error
-              ? saveBudget.error.message
-              : "Save failed."
+            ? getSupabaseRequestErrorMessage(saveBudget.error)
             : "")}
       </p>
     </section>

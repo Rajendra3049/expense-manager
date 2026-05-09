@@ -151,7 +151,6 @@ export function DebtKhataManager() {
         type: "manual",
         message: "Debt account already exists (case-insensitive).",
       });
-      toast.error(`"${values.name}" already exists.`);
       return;
     }
     accountForm.clearErrors("name");

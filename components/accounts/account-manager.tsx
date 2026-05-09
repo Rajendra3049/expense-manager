@@ -122,7 +122,6 @@ export function AccountManager() {
         type: "manual",
         message: "Account already exists (case-insensitive).",
       });
-      toast.error(`"${values.name}" already exists.`);
       return;
     }
 
@@ -212,7 +211,6 @@ export function AccountManager() {
         type: "manual",
         message: "Account already exists (case-insensitive).",
       });
-      toast.error(`"${name}" already exists.`);
       return;
     }
     try {

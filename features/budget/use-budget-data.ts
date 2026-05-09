@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetKeys } from "@/features/budget/query-keys";
+import { suppressGlobalMutationErrorMeta } from "@/lib/react-query/query-meta";
 import type { BudgetMonthOverview } from "@/features/budget/types";
 import { localMonthBoundsFromParts } from "@/lib/expenses/dates";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -106,6 +107,7 @@ export function useSaveBudgetMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: suppressGlobalMutationErrorMeta,
     mutationFn: async (input: {
       year: number;
       month: number;
