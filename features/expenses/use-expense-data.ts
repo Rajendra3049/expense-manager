@@ -276,8 +276,7 @@ export function useInsertExpenseMutation() {
         user_id: user.id,
         amount: input.amount,
         category_id: input.categoryId,
-        account_id:
-          input.accountId.length > 0 ? input.accountId : null,
+        account_id: input.accountId,
         trip_id: input.tripId.length > 0 ? input.tripId : null,
         emi_id: input.emiId.length > 0 ? input.emiId : null,
         investment_id:

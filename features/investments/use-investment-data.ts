@@ -58,17 +58,13 @@ export function useInsertInvestmentMutation() {
   });
 }
 
-export function useUpdateInvestmentValueMutation() {
+export function useDeleteInvestmentMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { id: string; currentValue: number }) => {
+    mutationFn: async (id: string) => {
       const supabase = createBrowserSupabaseClient();
-      const { error } = await supabase
-        .from("investments")
-        .update({ current_value: input.currentValue })
-        .eq("id", input.id);
-
+      const { error } = await supabase.from("investments").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

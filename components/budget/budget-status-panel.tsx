@@ -83,7 +83,10 @@ export function BudgetStatusPanel({
 
   const totalLimit = overview.budget ? num(overview.budget.total_limit) : 0;
   const spent = overview.spentTotal;
-  const totalLevel = budgetWarningLevel(spent, totalLimit);
+  const hasEffectiveMonthlyCap = Boolean(overview.budget) && totalLimit > 0;
+  const totalLevel = hasEffectiveMonthlyCap
+    ? budgetWarningLevel(spent, totalLimit)
+    : "ok";
 
   return (
     <div className="space-y-6">
@@ -92,20 +95,27 @@ export function BudgetStatusPanel({
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             Monthly total
           </h3>
-          {overview.budget ? badge(totalLevel) : (
+          {hasEffectiveMonthlyCap ? (
+            badge(totalLevel)
+          ) : (
             <span className="text-xs text-zinc-500">No monthly cap set</span>
           )}
         </div>
         <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
           {formatMoney(spent)}
-          {overview.budget ? (
+          {hasEffectiveMonthlyCap ? (
             <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
               {" "}
               / {formatMoney(totalLimit)}
             </span>
+          ) : overview.budget ? (
+            <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
+              {" "}
+              <span className="text-xs">(total not set)</span>
+            </span>
           ) : null}
         </p>
-        {overview.budget ? (
+        {hasEffectiveMonthlyCap ? (
           <>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
               <div
@@ -125,6 +135,10 @@ export function BudgetStatusPanel({
               {formatBudgetPercent(spent, totalLimit)} of monthly budget used
             </p>
           </>
+        ) : overview.budget ? (
+          <p className="mt-2 text-xs text-zinc-500">
+            Enter a total above zero to compare spending against a monthly cap.
+          </p>
         ) : (
           <p className="mt-2 text-xs text-zinc-500">
             Set a total budget below to track spending against a monthly cap.

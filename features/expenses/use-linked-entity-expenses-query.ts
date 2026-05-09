@@ -12,10 +12,12 @@ export type EntityLinkedExpenseRow = {
   trip_id: string | null;
   emi_id: string | null;
   investment_id: string | null;
+  account_id?: string | null;
   amount: string | number;
   date: string;
   note: string;
   categories: { name: string } | { name: string }[] | null;
+  accounts?: { name: string } | { name: string }[] | null;
 };
 
 export function linkedExpenseCategoryLabel(
@@ -24,6 +26,15 @@ export function linkedExpenseCategoryLabel(
   const c = row.categories;
   if (!c) return "—";
   const first = Array.isArray(c) ? c[0] : c;
+  return first?.name?.trim() ? first.name : "—";
+}
+
+export function linkedExpenseAccountLabel(
+  row: Pick<EntityLinkedExpenseRow, "accounts">,
+): string {
+  const a = row.accounts;
+  if (!a) return "—";
+  const first = Array.isArray(a) ? a[0] : a;
   return first?.name?.trim() ? first.name : "—";
 }
 
@@ -62,7 +73,7 @@ export function useEmiLinkedExpensesQuery(emiIds: string[]) {
       const { data, error } = await supabase
         .from("expenses")
         .select(
-          "id, trip_id, emi_id, investment_id, amount, date, note, categories ( name )",
+          "id, trip_id, emi_id, investment_id, account_id, amount, date, note, categories ( name ), accounts ( name )",
         )
         .in("emi_id", emiIds)
         .is("archived_at", null)
@@ -86,7 +97,7 @@ export function useInvestmentLinkedExpensesQuery(investmentIds: string[]) {
       const { data, error } = await supabase
         .from("expenses")
         .select(
-          "id, trip_id, emi_id, investment_id, amount, date, note, categories ( name )",
+          "id, trip_id, emi_id, investment_id, account_id, amount, date, note, categories ( name ), accounts ( name )",
         )
         .in("investment_id", investmentIds)
         .is("archived_at", null)

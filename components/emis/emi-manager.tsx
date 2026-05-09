@@ -3,17 +3,24 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { useAccountsQuery } from "@/features/accounts/use-account-data";
 import {
+  linkedExpenseAccountLabel,
   linkedExpenseCategoryLabel,
   useEmiLinkedExpensesQuery,
 } from "@/features/expenses/use-linked-entity-expenses-query";
 import { useConfirm } from "@/components/providers/confirm-provider";
 import {
   formatEmiMoney,
+  useDeleteEmiMutation,
   useEmisQuery,
   useInsertEmiMutation,
-  useRecordEmiPaymentMutation,
 } from "@/features/emis/use-emi-data";
+import {
+  useCategoriesQuery,
+  useInsertExpenseMutation,
+} from "@/features/expenses/use-expense-data";
 import {
   emiFormSchema,
   type EmiFormInput,
@@ -30,6 +37,10 @@ function formatDisplayDate(isoDate: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function numEmi(v: string | number): number {
+  return typeof v === "number" ? v : Number.parseFloat(String(v));
 }
 
 function progressPercent(
@@ -50,9 +61,24 @@ function progressPercent(
 export function EmiManager() {
   const confirm = useConfirm();
   const { data: emis = [], isLoading, isError, error } = useEmisQuery();
+  const { data: accounts = [], isLoading: accountsLoading } =
+    useAccountsQuery();
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategoriesQuery();
+  const expenseCategories = useMemo(
+    () => categories.filter((c) => c.type === "expense"),
+    [categories],
+  );
   const insertEmi = useInsertEmiMutation();
-  const recordPayment = useRecordEmiPaymentMutation();
+  const insertExpense = useInsertExpenseMutation();
+  const deleteEmi = useDeleteEmiMutation();
   const [emiExpensesOpen, setEmiExpensesOpen] = useState(false);
+  const [payTarget, setPayTarget] = useState<(typeof emis)[number] | null>(null);
+  const [payAmount, setPayAmount] = useState("");
+  const [payDate, setPayDate] = useState(() => toLocalDateString(new Date()));
+  const [payCategoryId, setPayCategoryId] = useState("");
+  const [payAccountId, setPayAccountId] = useState("");
+  const [payNote, setPayNote] = useState("");
   const emiIds = useMemo(() => emis.map((e) => e.id), [emis]);
   const { data: emiLinked = [], isLoading: emiLinkedLoading } =
     useEmiLinkedExpensesQuery(emiIds);
@@ -95,6 +121,76 @@ export function EmiManager() {
       note: "",
     });
   });
+
+  function openPayDialog(e: (typeof emis)[number]) {
+    const rem = numEmi(e.remaining_amount);
+    const mon = numEmi(e.monthly_amount);
+    const def =
+      rem > 0 ? Math.min(rem, mon > 0 ? mon : rem) : 0;
+    setPayTarget(e);
+    setPayAmount(def > 0 ? String(def) : "");
+    setPayDate(toLocalDateString(new Date()));
+    setPayCategoryId(expenseCategories[0]?.id ?? "");
+    setPayAccountId(accounts[0]?.id ?? "");
+    setPayNote("");
+  }
+
+  function closePayDialog() {
+    setPayTarget(null);
+  }
+
+  async function submitEmiPayment() {
+    if (!payTarget) return;
+    const amt = Number.parseFloat(payAmount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error("Enter a valid payment amount.");
+      return;
+    }
+    if (!payCategoryId) {
+      toast.error("Select an expense category.");
+      return;
+    }
+    if (!payAccountId) {
+      toast.error("Select an account to pay from.");
+      return;
+    }
+    try {
+      await insertExpense.mutateAsync({
+        amount: amt,
+        categoryId: payCategoryId,
+        accountId: payAccountId,
+        tripId: "",
+        emiId: payTarget.id,
+        investmentId: "",
+        debtAccountId: "",
+        date: payDate,
+        note: payNote.trim(),
+        tags: [],
+      });
+      toast.success("EMI payment recorded. It appears in Expenses and updates this EMI.");
+      closePayDialog();
+    } catch (mutationError) {
+      toast.error(getSupabaseRequestErrorMessage(mutationError));
+    }
+  }
+
+  async function onDeleteEmi(id: string, name: string) {
+    const ok = await confirm({
+      title: `Delete EMI "${name}"?`,
+      description:
+        "This removes the EMI record. Linked expense history remains in Expenses.",
+      confirmText: "Delete EMI",
+      cancelText: "Cancel",
+      intent: "danger",
+    });
+    if (!ok) return;
+    try {
+      await deleteEmi.mutateAsync(id);
+      toast.success(`EMI "${name}" deleted.`);
+    } catch (mutationError) {
+      toast.error(getSupabaseRequestErrorMessage(mutationError));
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -358,30 +454,40 @@ export function EmiManager() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="shrink-0 sm:pt-0.5">
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-start sm:pt-0.5">
                       {!remainingZero ? (
                         <button
                           type="button"
-                          disabled={recordPayment.isPending}
-                          onClick={async () => {
-                            const ok = await confirm({
-                              title: "Record one EMI payment?",
-                              description:
-                                "Remaining balance and due date will update.",
-                              confirmText: "Record payment",
-                              cancelText: "Cancel",
-                              intent: "default",
-                            });
-                            if (!ok) return;
-                            void recordPayment.mutateAsync(e);
-                          }}
+                          disabled={
+                            insertExpense.isPending ||
+                            accountsLoading ||
+                            categoriesLoading ||
+                            accounts.length === 0 ||
+                            expenseCategories.length === 0
+                          }
+                          title={
+                            accounts.length === 0
+                              ? "Add an account before recording payments."
+                              : expenseCategories.length === 0
+                                ? "Add an expense category before recording payments."
+                                : undefined
+                          }
+                          onClick={() => openPayDialog(e)}
                           className="cursor-pointer rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
                         >
-                          {recordPayment.isPending
-                            ? "Updating…"
+                          {insertExpense.isPending && payTarget?.id === e.id
+                            ? "Saving…"
                             : "Record payment"}
                         </button>
                       ) : null}
+                      <button
+                        type="button"
+                        disabled={deleteEmi.isPending}
+                        onClick={() => void onDeleteEmi(e.id, e.name)}
+                        className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-800 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:text-red-200 dark:hover:bg-red-950/40"
+                      >
+                        {deleteEmi.isPending ? "Deleting…" : "Delete EMI"}
+                      </button>
                     </div>
                   </div>
                 </li>
@@ -390,14 +496,6 @@ export function EmiManager() {
           </ul>
         )}
 
-        {recordPayment.isError ? (
-          <p
-            className="border-t border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200 sm:px-5"
-            role="alert"
-          >
-            {getSupabaseRequestErrorMessage(recordPayment.error)}
-          </p>
-        ) : null}
       </section>
 
       <section
@@ -416,11 +514,13 @@ export function EmiManager() {
               id="emi-linked-exp-heading"
               className="text-base font-semibold text-zinc-900 dark:text-zinc-50"
             >
-              Payments from expenses
+              EMI payment history
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Each linked expense reduces remaining principal (capped at the
-              outstanding balance).
+              Every payment linked to this EMI appears here, whether you record
+              it from Expenses or from Record payment. Principal reduces up to
+              the outstanding balance; your account balance updates from the
+              linked expense.
             </p>
           </div>
           <span
@@ -449,8 +549,8 @@ export function EmiManager() {
               <p className="text-sm text-zinc-500">Loading…</p>
             ) : emiLinked.length === 0 ? (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                No linked expenses yet. On the Expenses page, use &quot;Also link
-                to&quot; and select EMI.
+                No linked payments yet. Record a payment above or on the
+                Expenses page using &quot;Also link to&quot; and select this EMI.
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -459,6 +559,7 @@ export function EmiManager() {
                     <tr>
                       <th className="px-4 py-3 sm:px-5">EMI</th>
                       <th className="px-4 py-3 sm:px-5">Date</th>
+                      <th className="px-4 py-3 sm:px-5">Account</th>
                       <th className="px-4 py-3 sm:px-5">Category</th>
                       <th className="px-4 py-3 text-right sm:px-5">Amount</th>
                       <th className="px-4 py-3 sm:px-5">Note</th>
@@ -475,6 +576,9 @@ export function EmiManager() {
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
                           {formatDisplayDate(row.date)}
+                        </td>
+                        <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                          {linkedExpenseAccountLabel(row)}
                         </td>
                         <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
                           {linkedExpenseCategoryLabel(row)}
@@ -494,6 +598,158 @@ export function EmiManager() {
           </div>
         </div>
       </section>
+
+      {payTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="presentation"
+          onClick={closePayDialog}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="emi-pay-dialog-title"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+            onClick={(ev) => ev.stopPropagation()}
+          >
+            <h3
+              id="emi-pay-dialog-title"
+              className="text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+            >
+              Record EMI payment
+            </h3>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              Creates an expense linked to{" "}
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {payTarget.name}
+              </span>{" "}
+              (remaining {formatEmiMoney(payTarget.remaining_amount)}). The
+              payment appears in Expenses and in EMI payment history below.
+            </p>
+            <div className="mt-4 space-y-4">
+              <div>
+                <label
+                  htmlFor="emi-pay-amount"
+                  className="block text-sm font-medium text-zinc-800 dark:text-zinc-200"
+                >
+                  Amount (INR)
+                </label>
+                <input
+                  id="emi-pay-amount"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={payAmount}
+                  onChange={(ev) => setPayAmount(ev.target.value)}
+                  className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-600"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="emi-pay-date"
+                  className="block text-sm font-medium text-zinc-800 dark:text-zinc-200"
+                >
+                  Date
+                </label>
+                <input
+                  id="emi-pay-date"
+                  type="date"
+                  value={payDate}
+                  onChange={(ev) => setPayDate(ev.target.value)}
+                  className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-600"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="emi-pay-account"
+                  className="block text-sm font-medium text-zinc-800 dark:text-zinc-200"
+                >
+                  Paid from account
+                </label>
+                <select
+                  id="emi-pay-account"
+                  value={payAccountId}
+                  onChange={(ev) => setPayAccountId(ev.target.value)}
+                  className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-600"
+                >
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="emi-pay-category"
+                  className="block text-sm font-medium text-zinc-800 dark:text-zinc-200"
+                >
+                  Expense category
+                </label>
+                <select
+                  id="emi-pay-category"
+                  value={payCategoryId}
+                  onChange={(ev) => setPayCategoryId(ev.target.value)}
+                  className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-600"
+                >
+                  {expenseCategories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="emi-pay-note"
+                  className="block text-sm font-medium text-zinc-800 dark:text-zinc-200"
+                >
+                  Note{" "}
+                  <span className="font-normal text-zinc-500">(optional)</span>
+                </label>
+                <textarea
+                  id="emi-pay-note"
+                  rows={2}
+                  value={payNote}
+                  onChange={(ev) => setPayNote(ev.target.value)}
+                  placeholder="Reference or context for this payment"
+                  className="mt-1 w-full resize-y rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-600"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={closePayDialog}
+                disabled={insertExpense.isPending}
+                className="cursor-pointer rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitEmiPayment()}
+                disabled={
+                  insertExpense.isPending ||
+                  !payAccountId ||
+                  !payCategoryId
+                }
+                title={
+                  !payAccountId
+                    ? "Select the account this payment is drawn from."
+                    : !payCategoryId
+                      ? "Select an expense category."
+                      : undefined
+                }
+                className="cursor-pointer rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              >
+                {insertExpense.isPending ? "Saving…" : "Save payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

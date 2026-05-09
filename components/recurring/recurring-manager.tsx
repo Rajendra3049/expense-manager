@@ -312,16 +312,26 @@ export function RecurringManager() {
               htmlFor="rec-acc"
               className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
-              Account{" "}
-              <span className="font-normal text-zinc-500">(optional)</span>
+              Account
             </label>
             <select
               id="rec-acc"
-              disabled={accLoading}
-              className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              disabled={accLoading || accounts.length === 0}
+              title={
+                accounts.length === 0 && !accLoading
+                  ? "Create an account on the Accounts page first."
+                  : undefined
+              }
+              className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               {...register("accountId")}
             >
-              <option value="">{accLoading ? "Loading…" : "None"}</option>
+              <option value="">
+                {accLoading
+                  ? "Loading…"
+                  : accounts.length === 0
+                    ? "No accounts yet"
+                    : "Select account"}
+              </option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -383,7 +393,8 @@ export function RecurringManager() {
                 isSubmitting ||
                 insertRule.isPending ||
                 updateRule.isPending ||
-                expenseCategories.length === 0
+                expenseCategories.length === 0 ||
+                accounts.length === 0
               }
               className="w-full cursor-pointer rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[140px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >

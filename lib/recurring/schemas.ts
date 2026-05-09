@@ -22,7 +22,10 @@ export const recurringExpenseFormSchema = z.object({
     .transform((s) => s.trim()),
   amount: moneyString,
   categoryId: z.string().uuid("Select a category"),
-  accountId: z.union([z.literal(""), z.string().uuid()]).default(""),
+  accountId: z
+    .string()
+    .min(1, "Select an account")
+    .uuid("Select an account"),
   frequency: z.enum(["daily", "weekly", "monthly", "yearly"]),
   nextDate: dateString,
   note: z

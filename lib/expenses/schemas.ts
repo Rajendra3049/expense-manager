@@ -25,7 +25,10 @@ export const expenseFormSchema = z
         return n <= MAX_EXPENSE_AMOUNT;
       }, "Enter a smaller amount (maximum 99,999,999.99)."),
     categoryId: z.string().uuid("Select a category"),
-    accountId: z.union([z.literal(""), z.string().uuid()]).default(""),
+    accountId: z
+      .string()
+      .min(1, "Select an account")
+      .uuid("Select an account"),
     linkKind: expenseLinkKindSchema.default(""),
     linkTargetId: z.union([z.literal(""), z.string().uuid()]).default(""),
     date: dateString,

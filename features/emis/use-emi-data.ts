@@ -3,19 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { emiKeys } from "@/features/emis/query-keys";
 import type { EmiRow } from "@/features/emis/types";
-import { toLocalDateString } from "@/lib/expenses/dates";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function num(v: string | number): number {
   return typeof v === "number" ? v : Number.parseFloat(String(v));
-}
-
-/** Next calendar month for a `YYYY-MM-DD` string (local date semantics). */
-function addOneMonthYmd(ymd: string): string {
-  const [y, m, d] = ymd.split("-").map(Number);
-  if (!y || !m || !d) return ymd;
-  const dt = new Date(y, m - 1 + 1, d);
-  return toLocalDateString(dt);
 }
 
 export function useEmisQuery() {
@@ -72,27 +63,13 @@ export function useInsertEmiMutation() {
   });
 }
 
-export function useRecordEmiPaymentMutation() {
+export function useDeleteEmiMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (row: EmiRow) => {
+    mutationFn: async (id: string) => {
       const supabase = createBrowserSupabaseClient();
-      const remaining = num(row.remaining_amount);
-      const monthly = num(row.monthly_amount);
-      const paid = Math.min(monthly, remaining);
-      const newRemaining = Math.max(0, remaining - paid);
-      const newDue =
-        newRemaining === 0 ? row.due_date : addOneMonthYmd(row.due_date);
-
-      const { error } = await supabase
-        .from("emis")
-        .update({
-          remaining_amount: newRemaining,
-          due_date: newDue,
-        })
-        .eq("id", row.id);
-
+      const { error } = await supabase.from("emis").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

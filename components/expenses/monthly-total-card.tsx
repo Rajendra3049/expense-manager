@@ -34,14 +34,20 @@ export function MonthlyTotalCard() {
     error: budgetError,
   } = useBudgetMonthOverviewQuery(year, month);
 
-  const monthlyLimit = budgetOverview?.budget
+  const rawMonthlyLimit = budgetOverview?.budget
     ? num(budgetOverview.budget.total_limit)
     : null;
+  /** Zero or unset total limit means no spendable cap — do not derive negative "remaining". */
+  const hasEffectiveMonthlyLimit =
+    rawMonthlyLimit !== null && rawMonthlyLimit > 0;
   const spentTotal = budgetOverview?.spentTotal ?? total;
-  const remaining = monthlyLimit !== null ? monthlyLimit - spentTotal : null;
+  const remaining =
+    hasEffectiveMonthlyLimit && rawMonthlyLimit !== null
+      ? rawMonthlyLimit - spentTotal
+      : null;
   const usedPct =
-    monthlyLimit && monthlyLimit > 0
-      ? Math.min(100, (spentTotal / monthlyLimit) * 100)
+    hasEffectiveMonthlyLimit && rawMonthlyLimit !== null
+      ? Math.min(100, (spentTotal / rawMonthlyLimit) * 100)
       : null;
 
   const categoryRows = useMemo(() => {
@@ -61,6 +67,46 @@ export function MonthlyTotalCard() {
       })
       .sort((a, b) => b.pct - a.pct);
   }, [budgetOverview]);
+
+  const categoryLimitsSection = (
+    <div>
+      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+        Category limits
+      </p>
+      {categoryRows.length === 0 ? (
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          No category caps set for this month.
+        </p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {categoryRows.slice(0, 4).map((row) => (
+            <li key={row.id}>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="truncate text-xs text-zinc-700 dark:text-zinc-300">
+                  {row.name}
+                </span>
+                <span className="whitespace-nowrap text-[11px] tabular-nums text-zinc-600 dark:text-zinc-400">
+                  {formatMoney(row.spent)} / {formatMoney(row.limit)}
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                <div
+                  className={`h-full ${
+                    row.pct >= 100
+                      ? "bg-red-500"
+                      : row.pct >= 80
+                        ? "bg-amber-500"
+                        : "bg-emerald-500"
+                  }`}
+                  style={{ width: `${Math.max(0, Math.min(100, row.pct))}%` }}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 
   return (
     <aside
@@ -105,11 +151,23 @@ export function MonthlyTotalCard() {
           <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
             {getFriendlyErrorMessage(budgetError)}
           </p>
-        ) : monthlyLimit === null ? (
+        ) : !budgetOverview?.budget ? (
           <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
             No monthly budget set yet. Add one in Budgets to track limit usage
             here.
           </p>
+        ) : !hasEffectiveMonthlyLimit ? (
+          <div className="mt-3 space-y-3">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Set a{" "}
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                positive
+              </span>{" "}
+              total monthly limit in Budgets to see remaining balance and usage
+              progress. A zero monthly total is treated as not configured.
+            </p>
+            {categoryLimitsSection}
+          </div>
         ) : (
           <div className="mt-3 space-y-3">
             <div className="grid grid-cols-2 gap-2">
@@ -118,7 +176,7 @@ export function MonthlyTotalCard() {
                   Monthly limit
                 </p>
                 <p className="text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                  {formatMoney(monthlyLimit)}
+                  {formatMoney(rawMonthlyLimit ?? 0)}
                 </p>
               </div>
               <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-900/60">
@@ -127,12 +185,12 @@ export function MonthlyTotalCard() {
                 </p>
                 <p
                   className={`text-sm font-semibold tabular-nums ${
-                    (remaining ?? 0) < 0
+                    remaining !== null && remaining < 0
                       ? "text-red-600 dark:text-red-400"
                       : "text-zinc-900 dark:text-zinc-100"
                   }`}
                 >
-                  {formatMoney(remaining ?? 0)}
+                  {remaining !== null ? formatMoney(remaining) : "—"}
                 </p>
               </div>
             </div>
@@ -161,43 +219,7 @@ export function MonthlyTotalCard() {
               </div>
             </div>
 
-            <div>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Category limits
-              </p>
-              {categoryRows.length === 0 ? (
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  No category caps set for this month.
-                </p>
-              ) : (
-                <ul className="mt-2 space-y-2">
-                  {categoryRows.slice(0, 4).map((row) => (
-                    <li key={row.id}>
-                      <div className="mb-1 flex items-center justify-between gap-2">
-                        <span className="truncate text-xs text-zinc-700 dark:text-zinc-300">
-                          {row.name}
-                        </span>
-                        <span className="whitespace-nowrap text-[11px] tabular-nums text-zinc-600 dark:text-zinc-400">
-                          {formatMoney(row.spent)} / {formatMoney(row.limit)}
-                        </span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-                        <div
-                          className={`h-full ${
-                            row.pct >= 100
-                              ? "bg-red-500"
-                              : row.pct >= 80
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                          }`}
-                          style={{ width: `${Math.max(0, Math.min(100, row.pct))}%` }}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            {categoryLimitsSection}
           </div>
         )}
       </div>

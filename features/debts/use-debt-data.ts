@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { accountKeys } from "@/features/accounts/query-keys";
 import { debtKeys } from "@/features/debts/query-keys";
 import type { DebtAccountRow, DebtEntryRow } from "@/features/debts/types";
 import { suppressGlobalMutationErrorMeta } from "@/lib/react-query/query-meta";
@@ -37,7 +38,9 @@ export function useDebtEntriesQuery() {
       const supabase = createBrowserSupabaseClient();
       const { data, error } = await supabase
         .from("debt_account_entries")
-        .select("id, debt_account_id, entry_type, amount, note, happened_on, created_at")
+        .select(
+          "id, debt_account_id, account_id, entry_type, amount, note, happened_on, created_at",
+        )
         .order("happened_on", { ascending: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -88,6 +91,7 @@ export function useInsertDebtAccountMutation() {
       name: string;
       type: "given" | "taken";
       openingAmount: number;
+      openingCashAccountId: string;
       dueDate: string;
       note: string;
     }) => {
@@ -113,12 +117,14 @@ export function useInsertDebtAccountMutation() {
         amount: input.openingAmount,
         happened_on: new Date().toISOString().slice(0, 10),
         note: "Opening balance",
+        account_id: input.openingCashAccountId,
       });
       if (error) throw error;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: debtKeys.all });
       await queryClient.invalidateQueries({ queryKey: [...debtKeys.all, "entries"] });
+      await queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }
@@ -133,6 +139,7 @@ export function useInsertDebtEntryMutation() {
       entryType: "borrow" | "payment";
       amount: number;
       happenedOn: string;
+      cashAccountId: string;
       note?: string;
     }) => {
       const { supabase, userId } = await getSignedInUserId();
@@ -143,12 +150,14 @@ export function useInsertDebtEntryMutation() {
         amount: input.amount,
         happened_on: input.happenedOn,
         note: input.note?.trim() ? input.note.trim() : "",
+        account_id: input.cashAccountId,
       });
       if (error) throw error;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: debtKeys.all });
       await queryClient.invalidateQueries({ queryKey: [...debtKeys.all, "entries"] });
+      await queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }

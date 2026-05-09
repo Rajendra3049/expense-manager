@@ -3,24 +3,24 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import {
+  linkedExpenseAccountLabel,
   linkedExpenseCategoryLabel,
   useInvestmentLinkedExpensesQuery,
 } from "@/features/expenses/use-linked-entity-expenses-query";
 import {
   formatInvestmentMoney,
+  useDeleteInvestmentMutation,
   useInsertInvestmentMutation,
   useInvestmentsQuery,
-  useUpdateInvestmentValueMutation,
 } from "@/features/investments/use-investment-data";
 import type { InvestmentRow } from "@/features/investments/types";
 import {
   investmentFormSchema,
-  investmentValueFormSchema,
   type InvestmentFormInput,
   type InvestmentFormValues,
-  type InvestmentValueFormInput,
-  type InvestmentValueFormValues,
 } from "@/lib/investments/schemas";
 import { getSupabaseRequestErrorMessage } from "@/lib/supabase/error-message";
 
@@ -31,70 +31,6 @@ const TYPE_LABELS: Record<InvestmentRow["type"], string> = {
   crypto: "Crypto",
   other: "Other",
 };
-
-function InvestmentValueEditor({
-  row,
-  onDone,
-}: {
-  row: InvestmentRow;
-  onDone: () => void;
-}) {
-  const updateValue = useUpdateInvestmentValueMutation();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<InvestmentValueFormInput, unknown, InvestmentValueFormValues>({
-    resolver: zodResolver(investmentValueFormSchema),
-    defaultValues: {
-      currentValue: String(row.current_value),
-    },
-  });
-
-  return (
-    <form
-      className="flex flex-wrap items-center gap-2"
-      onSubmit={handleSubmit(async (values) => {
-        await updateValue.mutateAsync({
-          id: row.id,
-          currentValue: values.currentValue,
-        });
-        onDone();
-      })}
-    >
-      <input
-        type="number"
-        inputMode="decimal"
-        step="0.01"
-        min="0"
-        className="w-28 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-        {...register("currentValue")}
-      />
-      {errors.currentValue ? (
-        <span className="text-xs text-red-600">{errors.currentValue.message}</span>
-      ) : null}
-      <button
-        type="submit"
-        disabled={updateValue.isPending}
-        className="cursor-pointer rounded-lg bg-zinc-900 px-2 py-1 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-      >
-        Save
-      </button>
-      <button
-        type="button"
-        onClick={onDone}
-        className="cursor-pointer rounded-lg border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-600"
-      >
-        Cancel
-      </button>
-      {updateValue.isError ? (
-        <span className="w-full text-xs text-red-600">
-          {getSupabaseRequestErrorMessage(updateValue.error)}
-        </span>
-      ) : null}
-    </form>
-  );
-}
 
 function formatDisplayDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-").map(Number);
@@ -107,9 +43,10 @@ function formatDisplayDate(isoDate: string): string {
 }
 
 export function InvestmentManager() {
+  const confirm = useConfirm();
   const { data: rows = [], isLoading, isError, error } = useInvestmentsQuery();
   const insertInv = useInsertInvestmentMutation();
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const deleteInv = useDeleteInvestmentMutation();
   const [contribOpen, setContribOpen] = useState(false);
   const invIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const { data: invLinked = [], isLoading: invLinkedLoading } =
@@ -136,19 +73,42 @@ export function InvestmentManager() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    await insertInv.mutateAsync({
-      name: values.name,
-      type: values.type,
-      currentValue: values.currentValue,
-      note: values.note,
-    });
-    reset({
-      name: "",
-      type: values.type,
-      currentValue: "",
-      note: "",
-    });
+    try {
+      await insertInv.mutateAsync({
+        name: values.name,
+        type: values.type,
+        currentValue: values.currentValue,
+        note: values.note,
+      });
+      toast.success("Investment added.");
+      reset({
+        name: "",
+        type: values.type,
+        currentValue: "",
+        note: "",
+      });
+    } catch (mutationError) {
+      toast.error(getSupabaseRequestErrorMessage(mutationError));
+    }
   });
+
+  async function onDeleteInvestment(id: string, name: string) {
+    const ok = await confirm({
+      title: `Delete "${name}"?`,
+      description:
+        "This removes the investment record. Linked expenses remain in Expenses; unlink or archive them separately if needed.",
+      confirmText: "Delete investment",
+      cancelText: "Cancel",
+      intent: "danger",
+    });
+    if (!ok) return;
+    try {
+      await deleteInv.mutateAsync(id);
+      toast.success(`Investment "${name}" deleted.`);
+    } catch (mutationError) {
+      toast.error(getSupabaseRequestErrorMessage(mutationError));
+    }
+  }
 
   const totalTracked = rows.reduce(
     (sum, r) =>
@@ -166,8 +126,9 @@ export function InvestmentManager() {
           Investments
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Track your holdings and update current market values anytime. Portfolio
-          totals below use <span className="font-medium">current value</span>.
+          Track holdings with an opening position and a single contribution ledger
+          (account-wise) from linked expenses. Portfolio total sums{" "}
+          <span className="font-medium">current value</span> per line.
         </p>
       </header>
 
@@ -288,12 +249,6 @@ export function InvestmentManager() {
             </button>
           </div>
         </form>
-
-        {insertInv.isError ? (
-          <p className="mt-3 text-sm text-red-600" role="alert">
-            {getSupabaseRequestErrorMessage(insertInv.error)}
-          </p>
-        ) : null}
       </section>
 
       <section
@@ -309,7 +264,8 @@ export function InvestmentManager() {
               Portfolio
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Update value anytime with Edit.
+              Values come from the amount you set when adding each line plus
+              contributions recorded as linked expenses.
             </p>
           </div>
           {rows.length > 0 ? (
@@ -347,7 +303,7 @@ export function InvestmentManager() {
                   <th className="px-4 py-3 sm:px-5">Type</th>
                   <th className="px-4 py-3 text-right sm:px-5">Value</th>
                   <th className="px-4 py-3 sm:px-5">
-                    <span className="sr-only">Edit</span>
+                    <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
@@ -369,25 +325,17 @@ export function InvestmentManager() {
                       {TYPE_LABELS[r.type]}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-zinc-900 dark:text-zinc-50 sm:px-5">
-                      {editingId === r.id ? (
-                        <InvestmentValueEditor
-                          row={r}
-                          onDone={() => setEditingId(null)}
-                        />
-                      ) : (
-                        formatInvestmentMoney(r.current_value)
-                      )}
+                      {formatInvestmentMoney(r.current_value)}
                     </td>
                     <td className="px-4 py-3 sm:px-5">
-                      {editingId === r.id ? null : (
-                        <button
-                          type="button"
-                          onClick={() => setEditingId(r.id)}
-                          className="cursor-pointer rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
-                        >
-                          Edit value
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        disabled={deleteInv.isPending}
+                        onClick={() => void onDeleteInvestment(r.id, r.name)}
+                        className="cursor-pointer rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-800 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:text-red-200 dark:hover:bg-red-950/40"
+                      >
+                        {deleteInv.isPending ? "Deleting…" : "Delete"}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -413,11 +361,12 @@ export function InvestmentManager() {
               id="inv-contrib-heading"
               className="text-base font-semibold text-zinc-900 dark:text-zinc-50"
             >
-              Contributions from expenses
+              Contribution ledger (account-wise)
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Expenses saved with an investment link increase tracked value and
-              appear here.
+              Single place for every investment top-up tied to an expense: same
+              rows whether you link from Expenses or elsewhere, with the account
+              that funded each amount.
             </p>
           </div>
           <span
@@ -446,8 +395,9 @@ export function InvestmentManager() {
               <p className="text-sm text-zinc-500">Loading…</p>
             ) : invLinked.length === 0 ? (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                No linked expenses yet. On the Expenses page, use &quot;Also link
-                to&quot; and select Investment.
+                No linked contributions yet. On the Expenses page, use &quot;Also
+                link to&quot; and select an investment to record the account and
+                amount here.
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -456,6 +406,7 @@ export function InvestmentManager() {
                     <tr>
                       <th className="px-4 py-3 sm:px-5">Investment</th>
                       <th className="px-4 py-3 sm:px-5">Date</th>
+                      <th className="px-4 py-3 sm:px-5">Account</th>
                       <th className="px-4 py-3 sm:px-5">Category</th>
                       <th className="px-4 py-3 text-right sm:px-5">Amount</th>
                       <th className="px-4 py-3 sm:px-5">Note</th>
@@ -474,6 +425,9 @@ export function InvestmentManager() {
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
                           {formatDisplayDate(row.date)}
+                        </td>
+                        <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                          {linkedExpenseAccountLabel(row)}
                         </td>
                         <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
                           {linkedExpenseCategoryLabel(row)}

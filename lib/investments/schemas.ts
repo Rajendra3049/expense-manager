@@ -28,14 +28,3 @@ export const investmentFormSchema = z.object({
 
 export type InvestmentFormInput = z.input<typeof investmentFormSchema>;
 export type InvestmentFormValues = z.output<typeof investmentFormSchema>;
-
-export const investmentValueFormSchema = z.object({
-  currentValue: moneyString,
-});
-
-export type InvestmentValueFormInput = z.input<
-  typeof investmentValueFormSchema
->;
-export type InvestmentValueFormValues = z.output<
-  typeof investmentValueFormSchema
->;

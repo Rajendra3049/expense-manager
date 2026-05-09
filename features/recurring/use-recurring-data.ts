@@ -64,7 +64,7 @@ export function useInsertRecurringExpenseMutation() {
         label: input.label,
         amount: input.amount,
         category_id: input.categoryId,
-        account_id: input.accountId.length > 0 ? input.accountId : null,
+        account_id: input.accountId,
         frequency: input.frequency,
         next_date: input.nextDate,
         note: input.note,
@@ -100,7 +100,7 @@ export function useUpdateRecurringExpenseMutation() {
           label: input.label,
           amount: input.amount,
           category_id: input.categoryId,
-          account_id: input.accountId.length > 0 ? input.accountId : null,
+          account_id: input.accountId,
           frequency: input.frequency,
           next_date: input.nextDate,
           note: input.note,
@@ -191,6 +191,9 @@ export function useProcessDueRecurringMutation() {
       if (listError) throw listError;
 
       for (const rule of (rules ?? []) as RecurringExpenseRow[]) {
+        if (!rule.account_id) {
+          continue;
+        }
         let next = rule.next_date;
         let guard = 0;
         while (next <= today && guard < MAX_CATCH_UP_PER_RULE) {

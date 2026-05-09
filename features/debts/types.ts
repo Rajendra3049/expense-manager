@@ -14,6 +14,7 @@ export type DebtAccountRow = {
 export type DebtEntryRow = {
   id: string;
   debt_account_id: string;
+  account_id: string | null;
   entry_type: "borrow" | "payment";
   amount: string | number;
   note: string;

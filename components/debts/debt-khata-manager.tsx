@@ -2,9 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/providers/confirm-provider";
+import { useAccountsQuery } from "@/features/accounts/use-account-data";
 import {
   formatDebtAmount,
   formatDebtBalance,
@@ -16,6 +17,10 @@ import {
   useSettleDebtAccountMutation,
   useUpdateDebtDueDateMutation,
 } from "@/features/debts/use-debt-data";
+import {
+  useCategoriesQuery,
+  useInsertExpenseMutation,
+} from "@/features/expenses/use-expense-data";
 import {
   debtAccountSchema,
   debtEntrySchema,
@@ -114,8 +119,17 @@ export function DebtKhataManager() {
   const [historyOpen, setHistoryOpen] = useState(true);
   const { data: debtAccounts = [], isLoading, isError, error } = useDebtsQuery();
   const { data: debtEntries = [], isLoading: entriesLoading } = useDebtEntriesQuery();
+  const { data: cashAccounts = [], isLoading: cashAccountsLoading } =
+    useAccountsQuery();
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategoriesQuery();
+  const expenseCategories = useMemo(
+    () => categories.filter((c) => c.type === "expense"),
+    [categories],
+  );
   const insertDebtAccount = useInsertDebtAccountMutation();
   const insertDebtEntry = useInsertDebtEntryMutation();
+  const insertExpense = useInsertExpenseMutation();
   const settleDebtAccount = useSettleDebtAccountMutation();
   const updateDebtDueDate = useUpdateDebtDueDateMutation();
   const deleteDebtAccount = useDeleteDebtAccountMutation();
@@ -126,6 +140,7 @@ export function DebtKhataManager() {
       name: "",
       type: "taken",
       openingAmount: "",
+      openingCashAccountId: "",
       dueDate: "",
       note: "",
     },
@@ -137,7 +152,15 @@ export function DebtKhataManager() {
       entryType: "payment",
       amount: "",
       happenedOn: new Date().toISOString().slice(0, 10),
+      cashAccountId: "",
+      expenseCategoryId: "",
       note: "",
+    },
+  });
+  const entryType = useWatch({ control: entryForm.control, name: "entryType" });
+  const entryTypeRegister = entryForm.register("entryType", {
+    onChange: () => {
+      entryForm.setValue("expenseCategoryId", "");
     },
   });
 
@@ -155,12 +178,20 @@ export function DebtKhataManager() {
     }
     accountForm.clearErrors("name");
     try {
-      await insertDebtAccount.mutateAsync(values);
+      await insertDebtAccount.mutateAsync({
+        name: values.name,
+        type: values.type,
+        openingAmount: values.openingAmount,
+        openingCashAccountId: values.openingCashAccountId,
+        dueDate: values.dueDate,
+        note: values.note,
+      });
       toast.success(`Debt account "${values.name}" created.`);
       accountForm.reset({
         name: "",
         type: values.type,
         openingAmount: "",
+        openingCashAccountId: "",
         dueDate: "",
         note: "",
       });
@@ -171,13 +202,38 @@ export function DebtKhataManager() {
 
   const onCreateEntry = entryForm.handleSubmit(async (values) => {
     try {
-      await insertDebtEntry.mutateAsync(values);
-      toast.success("Debt entry recorded.");
+      if (values.entryType === "payment") {
+        await insertExpense.mutateAsync({
+          amount: values.amount,
+          categoryId: values.expenseCategoryId,
+          accountId: values.cashAccountId,
+          tripId: "",
+          emiId: "",
+          investmentId: "",
+          debtAccountId: values.debtAccountId,
+          date: values.happenedOn,
+          note: values.note?.trim() ?? "",
+          tags: [],
+        });
+        toast.success("Payment recorded as an expense and linked to this debt.");
+      } else {
+        await insertDebtEntry.mutateAsync({
+          debtAccountId: values.debtAccountId,
+          entryType: "borrow",
+          amount: values.amount,
+          happenedOn: values.happenedOn,
+          cashAccountId: values.cashAccountId,
+          note: values.note,
+        });
+        toast.success("Borrowing recorded and your account balance was updated.");
+      }
       entryForm.reset({
         debtAccountId: values.debtAccountId,
         entryType: values.entryType,
         amount: "",
         happenedOn: values.happenedOn,
+        cashAccountId: "",
+        expenseCategoryId: "",
         note: "",
       });
     } catch (mutationError) {
@@ -232,7 +288,7 @@ export function DebtKhataManager() {
         "This will permanently delete this debt account and all its entries. This action cannot be undone.",
       confirmText: "Delete account",
       cancelText: "Cancel",
-      intent: "destructive",
+      intent: "danger",
     });
     if (!ok) return;
     try {
@@ -449,6 +505,41 @@ export function DebtKhataManager() {
               {accountForm.formState.errors.openingAmount?.message}
             </p>
           </div>
+          <div className="sm:col-span-2">
+            <label
+              htmlFor="debt-opening-cash-account"
+              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Record opening balance in account
+            </label>
+            <select
+              id="debt-opening-cash-account"
+              disabled={cashAccountsLoading || cashAccounts.length === 0}
+              title={
+                cashAccounts.length === 0 && !cashAccountsLoading
+                  ? "Create an account on the Accounts page first."
+                  : undefined
+              }
+              className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              {...accountForm.register("openingCashAccountId")}
+            >
+              <option value="">
+                {cashAccountsLoading
+                  ? "Loading…"
+                  : cashAccounts.length === 0
+                    ? "No accounts yet"
+                    : "Select account"}
+              </option>
+              {cashAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 min-h-4 text-xs text-red-600" role="alert">
+              {accountForm.formState.errors.openingCashAccountId?.message}
+            </p>
+          </div>
           <div>
             <label
               htmlFor="debt-due-date"
@@ -480,7 +571,16 @@ export function DebtKhataManager() {
           <div className="sm:col-span-2">
             <button
               type="submit"
-              disabled={accountForm.formState.isSubmitting || insertDebtAccount.isPending}
+              disabled={
+                accountForm.formState.isSubmitting ||
+                insertDebtAccount.isPending ||
+                cashAccounts.length === 0
+              }
+              title={
+                cashAccounts.length === 0
+                  ? "Add an account on the Accounts page before creating a debt account."
+                  : undefined
+              }
               className="w-full cursor-pointer rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[160px] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               {insertDebtAccount.isPending ? "Saving..." : "Create debt account"}
@@ -492,7 +592,7 @@ export function DebtKhataManager() {
       <CollapsibleSection
         id="debt-entry-panel"
         title="Add debt entry"
-        description="Add more borrowed amount or payment against an account."
+        description="Borrowing updates your cash account and this ledger. Payments create an expense linked to this debt so balances and history stay aligned."
         open={entryOpen}
         onToggle={() => setEntryOpen((v) => !v)}
       >
@@ -529,13 +629,75 @@ export function DebtKhataManager() {
             </label>
             <select
               id="debt-entry-type"
-              className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              {...entryForm.register("entryType")}
+              className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              {...entryTypeRegister}
             >
               <option value="borrow">{ENTRY_TYPE_LABELS.borrow}</option>
               <option value="payment">{ENTRY_TYPE_LABELS.payment}</option>
             </select>
           </div>
+          <div className="sm:col-span-2">
+            <label
+              htmlFor="debt-entry-cash-account"
+              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Cash / bank account
+            </label>
+            <select
+              id="debt-entry-cash-account"
+              disabled={cashAccountsLoading || cashAccounts.length === 0}
+              className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              {...entryForm.register("cashAccountId")}
+            >
+              <option value="">
+                {cashAccountsLoading
+                  ? "Loading…"
+                  : cashAccounts.length === 0
+                    ? "No accounts yet"
+                    : "Select account"}
+              </option>
+              {cashAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 min-h-4 text-xs text-red-600" role="alert">
+              {entryForm.formState.errors.cashAccountId?.message}
+            </p>
+          </div>
+          {entryType === "payment" ? (
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="debt-entry-expense-category"
+                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
+                Expense category
+              </label>
+              <select
+                id="debt-entry-expense-category"
+                disabled={categoriesLoading || expenseCategories.length === 0}
+                className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                {...entryForm.register("expenseCategoryId")}
+              >
+                <option value="">
+                  {categoriesLoading
+                    ? "Loading…"
+                    : expenseCategories.length === 0
+                      ? "Add an expense category first"
+                      : "Select category"}
+                </option>
+                {expenseCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 min-h-4 text-xs text-red-600" role="alert">
+                {entryForm.formState.errors.expenseCategoryId?.message}
+              </p>
+            </div>
+          ) : null}
           <div>
             <label
               htmlFor="debt-entry-amount"
@@ -587,10 +749,18 @@ export function DebtKhataManager() {
           <div className="sm:col-span-2">
             <button
               type="submit"
-              disabled={entryForm.formState.isSubmitting || insertDebtEntry.isPending}
+              disabled={
+                entryForm.formState.isSubmitting ||
+                insertDebtEntry.isPending ||
+                insertExpense.isPending ||
+                cashAccounts.length === 0 ||
+                (entryType === "payment" && expenseCategories.length === 0)
+              }
               className="cursor-pointer rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
-              {insertDebtEntry.isPending ? "Saving..." : "Add entry"}
+              {insertDebtEntry.isPending || insertExpense.isPending
+                ? "Saving..."
+                : "Add entry"}
             </button>
           </div>
         </form>
