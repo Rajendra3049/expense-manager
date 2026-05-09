@@ -8,45 +8,69 @@ const dateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date (YYYY-MM-DD)");
 
-export const expenseFormSchema = z.object({
-  amount: z
-    .string()
-    .min(1, "Amount is required")
-    .transform((s) => s.replace(",", ".").trim())
-    .refine((s) => {
-      const n = Number.parseFloat(s);
-      return !Number.isNaN(n) && Number.isFinite(n) && n > 0;
-    }, "Enter an amount greater than 0")
-    .refine((s) => {
-      const n = Number.parseFloat(s);
-      return n <= MAX_EXPENSE_AMOUNT;
-    }, "Enter a smaller amount (maximum 99,999,999.99)."),
-  categoryId: z.string().uuid("Select a category"),
-  accountId: z.union([z.literal(""), z.string().uuid()]).default(""),
-  tripId: z.union([z.literal(""), z.string().uuid()]).default(""),
-  date: dateString,
-  note: z
-    .string()
-    .max(2000)
-    .optional()
-    .default("")
-    .transform((s) => s.trim()),
-  tags: z
-    .string()
-    .optional()
-    .default("")
-    .transform((s) =>
-      (s ?? "")
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean)
-        .slice(0, MAX_TAGS),
-    )
-    .refine(
-      (tags) => tags.every((t) => t.length <= MAX_TAG_LENGTH),
-      `Each tag must be ${MAX_TAG_LENGTH} characters or fewer.`,
-    ),
-});
+const expenseLinkKindSchema = z.enum(["", "trip", "emi", "investment", "debt"]);
+
+export const expenseFormSchema = z
+  .object({
+    amount: z
+      .string()
+      .min(1, "Amount is required")
+      .transform((s) => s.replace(",", ".").trim())
+      .refine((s) => {
+        const n = Number.parseFloat(s);
+        return !Number.isNaN(n) && Number.isFinite(n) && n > 0;
+      }, "Enter an amount greater than 0")
+      .refine((s) => {
+        const n = Number.parseFloat(s);
+        return n <= MAX_EXPENSE_AMOUNT;
+      }, "Enter a smaller amount (maximum 99,999,999.99)."),
+    categoryId: z.string().uuid("Select a category"),
+    accountId: z.union([z.literal(""), z.string().uuid()]).default(""),
+    linkKind: expenseLinkKindSchema.default(""),
+    linkTargetId: z.union([z.literal(""), z.string().uuid()]).default(""),
+    date: dateString,
+    note: z
+      .string()
+      .max(2000)
+      .optional()
+      .default("")
+      .transform((s) => s.trim()),
+    tags: z
+      .string()
+      .optional()
+      .default("")
+      .transform((s) =>
+        (s ?? "")
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .slice(0, MAX_TAGS),
+      )
+      .refine(
+        (tags) => tags.every((t) => t.length <= MAX_TAG_LENGTH),
+        `Each tag must be ${MAX_TAG_LENGTH} characters or fewer.`,
+      ),
+  })
+  .superRefine((data, ctx) => {
+    if (data.linkKind === "") {
+      if (data.linkTargetId !== "") {
+        ctx.addIssue({
+          code: "custom",
+          message: "Clear the linked record or choose a link type.",
+          path: ["linkTargetId"],
+        });
+      }
+      return;
+    }
+    const id = data.linkTargetId?.trim() ?? "";
+    if (!z.string().uuid().safeParse(id).success) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Select a linked record.",
+        path: ["linkTargetId"],
+      });
+    }
+  });
 
 export type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 

@@ -2,7 +2,7 @@ import type { ExpenseListRow } from "@/lib/expenses/types";
 import {
   expenseAccountName,
   expenseCategoryName,
-  expenseTripName,
+  expenseEntityLinkLabel,
 } from "@/lib/expenses/types";
 
 function csvEscape(value: string): string {
@@ -30,7 +30,7 @@ export function buildExpensesCsv(rows: ExpenseListRow[]): string {
     "date",
     "category",
     "account",
-    "trip",
+    "linked_to",
     "tags",
     "note",
     "amount",
@@ -44,7 +44,7 @@ export function buildExpensesCsv(rows: ExpenseListRow[]): string {
         csvEscape(row.date),
         csvEscape(expenseCategoryName(row)),
         csvEscape(expenseAccountName(row)),
-        csvEscape(expenseTripName(row)),
+        csvEscape(expenseEntityLinkLabel(row)),
         csvEscape(formatTags(row)),
         csvEscape(row.note ?? ""),
         csvEscape(formatAmount(row.amount)),

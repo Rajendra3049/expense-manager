@@ -14,8 +14,8 @@ import type { ExpenseListFilters } from "@/lib/expenses/filters";
 import {
   expenseAccountName,
   expenseCategoryName,
+  expenseEntityLinkLabel,
   expenseTagsList,
-  expenseTripName,
   type ExpenseListRow,
 } from "@/lib/expenses/types";
 
@@ -81,8 +81,8 @@ function ExpenseRowCard({
             {expenseAccountName(row) !== "—" ? (
               <> · {expenseAccountName(row)}</>
             ) : null}
-            {expenseTripName(row) !== "—" ? (
-              <> · Trip: {expenseTripName(row)}</>
+            {expenseEntityLinkLabel(row) !== "—" ? (
+              <> · {expenseEntityLinkLabel(row)}</>
             ) : null}
             {archived ? (
               <span className="ml-1 rounded bg-zinc-200 px-1 py-0.5 text-[10px] font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200">
@@ -263,7 +263,7 @@ export function ExpenseList({ filters }: ExpenseListProps) {
               <th className="px-4 py-3 sm:px-5">Date</th>
               <th className="px-4 py-3 sm:px-5">Category</th>
               <th className="px-4 py-3 sm:px-5">Account</th>
-              <th className="px-4 py-3 sm:px-5">Trip</th>
+              <th className="px-4 py-3 sm:px-5">Linked to</th>
               <th className="px-4 py-3 sm:px-5">Tags</th>
               <th className="px-4 py-3 sm:px-5">Note</th>
               <th className="px-4 py-3 text-right sm:px-5">Amount</th>
@@ -296,7 +296,7 @@ export function ExpenseList({ filters }: ExpenseListProps) {
                     {expenseAccountName(row)}
                   </td>
                   <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
-                    {expenseTripName(row)}
+                    {expenseEntityLinkLabel(row)}
                   </td>
                   <td className="max-w-[140px] px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 sm:px-5">
                     {tags.length === 0 ? (

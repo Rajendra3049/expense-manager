@@ -1,8 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import {
+  linkedExpenseCategoryLabel,
+  useInvestmentLinkedExpensesQuery,
+} from "@/features/expenses/use-linked-entity-expenses-query";
 import {
   formatInvestmentMoney,
   useInsertInvestmentMutation,
@@ -92,10 +96,29 @@ function InvestmentValueEditor({
   );
 }
 
+function formatDisplayDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  if (!y || !m || !d) return isoDate;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function InvestmentManager() {
   const { data: rows = [], isLoading, isError, error } = useInvestmentsQuery();
   const insertInv = useInsertInvestmentMutation();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [contribOpen, setContribOpen] = useState(false);
+  const invIds = useMemo(() => rows.map((r) => r.id), [rows]);
+  const { data: invLinked = [], isLoading: invLinkedLoading } =
+    useInvestmentLinkedExpensesQuery(invIds);
+  const invNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of rows) m.set(r.id, r.name);
+    return m;
+  }, [rows]);
 
   const {
     register,
@@ -372,6 +395,103 @@ export function InvestmentManager() {
             </table>
           </div>
         )}
+      </section>
+
+      <section
+        className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
+        aria-labelledby="inv-contrib-heading"
+      >
+        <button
+          type="button"
+          className="flex w-full cursor-pointer items-center justify-between rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-600"
+          aria-expanded={contribOpen}
+          aria-controls="inv-contrib-panel"
+          onClick={() => setContribOpen((v) => !v)}
+        >
+          <div>
+            <h2
+              id="inv-contrib-heading"
+              className="text-base font-semibold text-zinc-900 dark:text-zinc-50"
+            >
+              Contributions from expenses
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Expenses saved with an investment link increase tracked value and
+              appear here.
+            </p>
+          </div>
+          <span
+            className={`ml-4 text-lg leading-none text-zinc-500 transition-transform duration-300 dark:text-zinc-400 ${
+              contribOpen ? "rotate-180" : ""
+            }`}
+            aria-hidden="true"
+          >
+            ▾
+          </span>
+        </button>
+        <div
+          id="inv-contrib-panel"
+          className={`grid overflow-hidden transition-all duration-300 ease-in-out ${
+            contribOpen
+              ? "mt-4 grid-rows-[1fr] opacity-100"
+              : "mt-0 grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="min-h-0">
+            {invIds.length === 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Add an investment first.
+              </p>
+            ) : invLinkedLoading ? (
+              <p className="text-sm text-zinc-500">Loading…</p>
+            ) : invLinked.length === 0 ? (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                No linked expenses yet. On the Expenses page, use &quot;Also link
+                to&quot; and select Investment.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
+                    <tr>
+                      <th className="px-4 py-3 sm:px-5">Investment</th>
+                      <th className="px-4 py-3 sm:px-5">Date</th>
+                      <th className="px-4 py-3 sm:px-5">Category</th>
+                      <th className="px-4 py-3 text-right sm:px-5">Amount</th>
+                      <th className="px-4 py-3 sm:px-5">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                    {invLinked.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/30"
+                      >
+                        <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-50 sm:px-5">
+                          {row.investment_id
+                            ? invNameById.get(row.investment_id) ?? "—"
+                            : "—"}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                          {formatDisplayDate(row.date)}
+                        </td>
+                        <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                          {linkedExpenseCategoryLabel(row)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-900 dark:text-zinc-50 sm:px-5">
+                          {formatInvestmentMoney(row.amount)}
+                        </td>
+                        <td className="max-w-[200px] truncate px-4 py-3 text-zinc-600 dark:text-zinc-400 sm:px-5">
+                          {row.note?.trim() ? row.note : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       </section>
     </div>
   );

@@ -9,6 +9,9 @@ import {
 } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { accountKeys } from "@/features/accounts/query-keys";
+import { debtKeys } from "@/features/debts/query-keys";
+import { emiKeys } from "@/features/emis/query-keys";
+import { investmentKeys } from "@/features/investments/query-keys";
 import { tripKeys } from "@/features/trips/query-keys";
 import { analyticsKeys } from "@/features/analytics/query-keys";
 import { budgetKeys } from "@/features/budget/query-keys";
@@ -125,11 +128,18 @@ async function fetchExpensePage(
           category_id,
           account_id,
           trip_id,
+          emi_id,
+          investment_id,
+          debt_account_id,
+          emi_reduction_applied,
           tags,
           archived_at,
           categories ( id, name ),
           accounts ( id, name ),
-          trips ( id, name )
+          trips ( id, name ),
+          emis ( id, name ),
+          investments ( id, name ),
+          debt_accounts ( id, name )
         `,
     );
 
@@ -248,6 +258,9 @@ export function useInsertExpenseMutation() {
       categoryId: string;
       accountId: string;
       tripId: string;
+      emiId: string;
+      investmentId: string;
+      debtAccountId: string;
       date: string;
       note: string;
       tags: string[];
@@ -266,6 +279,11 @@ export function useInsertExpenseMutation() {
         account_id:
           input.accountId.length > 0 ? input.accountId : null,
         trip_id: input.tripId.length > 0 ? input.tripId : null,
+        emi_id: input.emiId.length > 0 ? input.emiId : null,
+        investment_id:
+          input.investmentId.length > 0 ? input.investmentId : null,
+        debt_account_id:
+          input.debtAccountId.length > 0 ? input.debtAccountId : null,
         date: input.date,
         note: input.note,
         tags: input.tags.length > 0 ? input.tags : [],
@@ -283,6 +301,11 @@ export function useInsertExpenseMutation() {
       await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
       await queryClient.invalidateQueries({ queryKey: accountKeys.all });
       await queryClient.invalidateQueries({ queryKey: tripKeys.all });
+      await queryClient.invalidateQueries({ queryKey: emiKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: investmentKeys.all,
+      });
+      await queryClient.invalidateQueries({ queryKey: debtKeys.all });
     },
   });
 }
@@ -472,6 +495,11 @@ export function useSetExpenseArchivedMutation() {
       await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
       await queryClient.invalidateQueries({ queryKey: accountKeys.all });
       await queryClient.invalidateQueries({ queryKey: tripKeys.all });
+      await queryClient.invalidateQueries({ queryKey: emiKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: investmentKeys.all,
+      });
+      await queryClient.invalidateQueries({ queryKey: debtKeys.all });
     },
   });
 }
@@ -515,6 +543,11 @@ export function useDeleteExpenseMutation() {
       await queryClient.invalidateQueries({ queryKey: analyticsKeys.all });
       await queryClient.invalidateQueries({ queryKey: accountKeys.all });
       await queryClient.invalidateQueries({ queryKey: tripKeys.all });
+      await queryClient.invalidateQueries({ queryKey: emiKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: investmentKeys.all,
+      });
+      await queryClient.invalidateQueries({ queryKey: debtKeys.all });
     },
   });
 }

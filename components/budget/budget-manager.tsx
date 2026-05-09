@@ -70,7 +70,7 @@ export function BudgetManager() {
             id="budget-year"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="mt-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="native-select mt-1 min-w-[5.5rem] rounded-lg border border-zinc-300 bg-white py-2 pl-3 pr-10 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           >
             {YEAR_OPTS.map((y) => (
               <option key={y} value={y}>
@@ -90,7 +90,7 @@ export function BudgetManager() {
             id="budget-month"
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="mt-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="native-select mt-1 min-w-[9rem] rounded-lg border border-zinc-300 bg-white py-2 pl-3 pr-10 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           >
             {Array.from({ length: 12 }, (_, i) => (
               <option key={i + 1} value={i + 1}>

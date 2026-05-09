@@ -1,7 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import {
+  linkedExpenseCategoryLabel,
+  useEmiLinkedExpensesQuery,
+} from "@/features/expenses/use-linked-entity-expenses-query";
 import { useConfirm } from "@/components/providers/confirm-provider";
 import {
   formatEmiMoney,
@@ -47,6 +52,15 @@ export function EmiManager() {
   const { data: emis = [], isLoading, isError, error } = useEmisQuery();
   const insertEmi = useInsertEmiMutation();
   const recordPayment = useRecordEmiPaymentMutation();
+  const [emiExpensesOpen, setEmiExpensesOpen] = useState(false);
+  const emiIds = useMemo(() => emis.map((e) => e.id), [emis]);
+  const { data: emiLinked = [], isLoading: emiLinkedLoading } =
+    useEmiLinkedExpensesQuery(emiIds);
+  const emiNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const e of emis) m.set(e.id, e.name);
+    return m;
+  }, [emis]);
   const today = toLocalDateString(new Date());
 
   const {
@@ -250,8 +264,9 @@ export function EmiManager() {
             Your EMIs
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Remaining starts equal to total; use Record payment after each
-            installment.
+            Remaining starts equal to total. Use Record payment for a scheduled
+            installment, or link an expense from the Expenses page to reduce
+            remaining by that payment amount.
           </p>
         </div>
 
@@ -383,6 +398,101 @@ export function EmiManager() {
             {getSupabaseRequestErrorMessage(recordPayment.error)}
           </p>
         ) : null}
+      </section>
+
+      <section
+        className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
+        aria-labelledby="emi-linked-exp-heading"
+      >
+        <button
+          type="button"
+          className="flex w-full cursor-pointer items-center justify-between rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-600"
+          aria-expanded={emiExpensesOpen}
+          aria-controls="emi-linked-exp-panel"
+          onClick={() => setEmiExpensesOpen((v) => !v)}
+        >
+          <div>
+            <h2
+              id="emi-linked-exp-heading"
+              className="text-base font-semibold text-zinc-900 dark:text-zinc-50"
+            >
+              Payments from expenses
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Each linked expense reduces remaining principal (capped at the
+              outstanding balance).
+            </p>
+          </div>
+          <span
+            className={`ml-4 text-lg leading-none text-zinc-500 transition-transform duration-300 dark:text-zinc-400 ${
+              emiExpensesOpen ? "rotate-180" : ""
+            }`}
+            aria-hidden="true"
+          >
+            ▾
+          </span>
+        </button>
+        <div
+          id="emi-linked-exp-panel"
+          className={`grid overflow-hidden transition-all duration-300 ease-in-out ${
+            emiExpensesOpen
+              ? "mt-4 grid-rows-[1fr] opacity-100"
+              : "mt-0 grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="min-h-0">
+            {emiIds.length === 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Add an EMI first.
+              </p>
+            ) : emiLinkedLoading ? (
+              <p className="text-sm text-zinc-500">Loading…</p>
+            ) : emiLinked.length === 0 ? (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                No linked expenses yet. On the Expenses page, use &quot;Also link
+                to&quot; and select EMI.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
+                    <tr>
+                      <th className="px-4 py-3 sm:px-5">EMI</th>
+                      <th className="px-4 py-3 sm:px-5">Date</th>
+                      <th className="px-4 py-3 sm:px-5">Category</th>
+                      <th className="px-4 py-3 text-right sm:px-5">Amount</th>
+                      <th className="px-4 py-3 sm:px-5">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                    {emiLinked.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/30"
+                      >
+                        <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-50 sm:px-5">
+                          {row.emi_id ? emiNameById.get(row.emi_id) ?? "—" : "—"}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                          {formatDisplayDate(row.date)}
+                        </td>
+                        <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                          {linkedExpenseCategoryLabel(row)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-900 dark:text-zinc-50 sm:px-5">
+                          {formatEmiMoney(row.amount)}
+                        </td>
+                        <td className="max-w-[200px] truncate px-4 py-3 text-zinc-600 dark:text-zinc-400 sm:px-5">
+                          {row.note?.trim() ? row.note : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       </section>
     </div>
   );
