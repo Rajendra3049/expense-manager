@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { BrandMark } from "@/components/branding/brand-mark";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useNavProgress } from "@/components/providers/nav-progress-provider";
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
+import { Spinner } from "@/components/ui/spinner";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Expenses" },
@@ -22,11 +25,28 @@ export function DashboardHeader() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const navProgress = useNavProgress();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isNavigating, startNavigation] = useTransition();
+
+  // `isSigningOut` covers the API call window, `isNavigating` covers the
+  // subsequent route transition. Combined, the button stays locked from the
+  // first click through the moment the login page renders.
+  const isBusy = isSigningOut || isNavigating;
 
   async function onSignOut() {
-    await signOut();
-    router.refresh();
-    router.push("/login");
+    if (isBusy) return;
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+    navProgress.start();
+    startNavigation(() => {
+      router.refresh();
+      router.push("/login");
+    });
   }
 
   return (
@@ -68,9 +88,20 @@ export function DashboardHeader() {
           <button
             type="button"
             onClick={() => void onSignOut()}
-            className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
+            disabled={isBusy}
+            aria-busy={isBusy}
+            aria-disabled={isBusy}
+            title={isBusy ? "Signing you out…" : undefined}
+            className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
           >
-            Sign out
+            {isBusy ? (
+              <>
+                <Spinner className="size-3.5" />
+                <span>Signing out…</span>
+              </>
+            ) : (
+              "Sign out"
+            )}
           </button>
         </div>
       </div>

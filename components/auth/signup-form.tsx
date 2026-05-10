@@ -3,9 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useNavProgress } from "@/components/providers/nav-progress-provider";
+import { Spinner } from "@/components/ui/spinner";
 import { formatAuthError } from "@/lib/auth/errors";
 import { safeNextPath } from "@/lib/auth/redirect";
 import { type SignupFormValues, signupSchema } from "@/lib/auth/schemas";
@@ -44,9 +46,11 @@ function clearPendingSignupEmail() {
 
 export function SignupForm() {
   const router = useRouter();
+  const navProgress = useNavProgress();
   const [formError, setFormError] = useState<string | null>(null);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [resendBusy, setResendBusy] = useState(false);
+  const [isNavigating, startNavigation] = useTransition();
 
   useLayoutEffect(() => {
     const pending = readPendingSignupEmail();
@@ -70,6 +74,12 @@ export function SignupForm() {
     },
   });
 
+  // Stay locked across the API call AND the subsequent navigation when the
+  // server returns a session (auto-login). Without this the button briefly
+  // re-enables between API success and route transition, allowing duplicate
+  // submissions.
+  const isBusy = isSubmitting || isNavigating;
+
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     const supabase = createBrowserSupabaseClient();
@@ -85,8 +95,11 @@ export function SignupForm() {
 
     if (data.session) {
       clearPendingSignupEmail();
-      router.refresh();
-      router.push(safeNextPath(undefined));
+      navProgress.start();
+      startNavigation(() => {
+        router.refresh();
+        router.push(safeNextPath(undefined));
+      });
       return;
     }
 
@@ -147,10 +160,18 @@ export function SignupForm() {
             disabled={resendBusy}
             title={resendBusy ? "Sending confirmation email…" : "Send another confirmation email"}
             aria-busy={resendBusy}
+            aria-disabled={resendBusy}
             onClick={() => void handleResend()}
-            className="flex h-10 w-full cursor-pointer items-center justify-center rounded-lg border border-zinc-300 bg-white text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
           >
-            {resendBusy ? "Sending…" : "Resend confirmation email"}
+            {resendBusy ? (
+              <>
+                <Spinner className="size-4" />
+                <span>Sending…</span>
+              </>
+            ) : (
+              "Resend confirmation email"
+            )}
           </button>
 
           <Link
@@ -214,83 +235,98 @@ export function SignupForm() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="signup-email"
-          className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
-        >
-          Email
-        </label>
-        <input
-          id="signup-email"
-          type="email"
-          autoComplete="email"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          {...register("email")}
-        />
-        {errors.email ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-            {errors.email.message}
-          </p>
-        ) : null}
-      </div>
+      <fieldset disabled={isBusy} className="contents disabled:opacity-100">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="signup-email"
+            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          >
+            Email
+          </label>
+          <input
+            id="signup-email"
+            type="email"
+            autoComplete="email"
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            {...register("email")}
+          />
+          {errors.email ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {errors.email.message}
+            </p>
+          ) : null}
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="signup-password"
-          className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
-        >
-          Password
-        </label>
-        <input
-          id="signup-password"
-          type="password"
-          autoComplete="new-password"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          {...register("password")}
-        />
-        {errors.password ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-            {errors.password.message}
-          </p>
-        ) : null}
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="signup-password"
+            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          >
+            Password
+          </label>
+          <input
+            id="signup-password"
+            type="password"
+            autoComplete="new-password"
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            {...register("password")}
+          />
+          {errors.password ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {errors.password.message}
+            </p>
+          ) : null}
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="signup-confirm"
-          className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
-        >
-          Confirm password
-        </label>
-        <input
-          id="signup-confirm"
-          type="password"
-          autoComplete="new-password"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          {...register("confirmPassword")}
-        />
-        {errors.confirmPassword ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-            {errors.confirmPassword.message}
-          </p>
-        ) : null}
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="signup-confirm"
+            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          >
+            Confirm password
+          </label>
+          <input
+            id="signup-confirm"
+            type="password"
+            autoComplete="new-password"
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            {...register("confirmPassword")}
+          />
+          {errors.confirmPassword ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {errors.confirmPassword.message}
+            </p>
+          ) : null}
+        </div>
+      </fieldset>
 
       <button
         type="submit"
-        disabled={isSubmitting}
-        title={isSubmitting ? "Creating your account…" : undefined}
-        className="mt-1 flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        disabled={isBusy}
+        aria-busy={isBusy}
+        aria-disabled={isBusy}
+        title={isBusy ? "Creating your account…" : undefined}
+        className="mt-1 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
       >
-        {isSubmitting ? "Creating account…" : "Sign up"}
+        {isBusy ? (
+          <>
+            <Spinner variant="contrast" className="size-4" />
+            <span>{isNavigating ? "Signing in…" : "Creating account…"}</span>
+          </>
+        ) : (
+          "Sign up"
+        )}
       </button>
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
         Already have an account?{" "}
         <Link
           href="/login"
-          className="cursor-pointer font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+          aria-disabled={isBusy}
+          tabIndex={isBusy ? -1 : undefined}
+          className={`font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100 ${
+            isBusy ? "pointer-events-none opacity-60" : "cursor-pointer"
+          }`}
         >
           Sign in
         </Link>

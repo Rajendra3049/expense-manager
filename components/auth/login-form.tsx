@@ -3,8 +3,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
+import { useNavProgress } from "@/components/providers/nav-progress-provider";
+import { Spinner } from "@/components/ui/spinner";
 import { formatAuthError } from "@/lib/auth/errors";
 import { safeNextPath } from "@/lib/auth/redirect";
 import { type LoginFormValues, loginSchema } from "@/lib/auth/schemas";
@@ -14,7 +16,9 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get("next"));
+  const navProgress = useNavProgress();
   const [formError, setFormError] = useState<string | null>(null);
+  const [isNavigating, startNavigation] = useTransition();
 
   const {
     register,
@@ -24,6 +28,12 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  // `isSubmitting` clears the moment the API call resolves, but the user is
+  // still visually on the form while Next.js fetches the destination route.
+  // `isNavigating` (driven by `useTransition`) keeps the submit button locked
+  // until the new route commits, preventing duplicate submissions.
+  const isBusy = isSubmitting || isNavigating;
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
@@ -38,8 +48,11 @@ export function LoginForm() {
       return;
     }
 
-    router.refresh();
-    router.push(next);
+    navProgress.start();
+    startNavigation(() => {
+      router.refresh();
+      router.push(next);
+    });
   });
 
   return (
@@ -66,59 +79,80 @@ export function LoginForm() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="login-email" className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-          Email
-        </label>
-        <input
-          id="login-email"
-          type="email"
-          autoComplete="email"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          {...register("email")}
-        />
-        {errors.email ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-            {errors.email.message}
-          </p>
-        ) : null}
-      </div>
+      <fieldset
+        disabled={isBusy}
+        className="contents disabled:opacity-100"
+      >
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="login-email"
+            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          >
+            Email
+          </label>
+          <input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            {...register("email")}
+          />
+          {errors.email ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {errors.email.message}
+            </p>
+          ) : null}
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="login-password"
-          className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
-        >
-          Password
-        </label>
-        <input
-          id="login-password"
-          type="password"
-          autoComplete="current-password"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          {...register("password")}
-        />
-        {errors.password ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-            {errors.password.message}
-          </p>
-        ) : null}
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="login-password"
+            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          >
+            Password
+          </label>
+          <input
+            id="login-password"
+            type="password"
+            autoComplete="current-password"
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            {...register("password")}
+          />
+          {errors.password ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {errors.password.message}
+            </p>
+          ) : null}
+        </div>
+      </fieldset>
 
       <button
         type="submit"
-        disabled={isSubmitting}
-        title={isSubmitting ? "Signing you in…" : undefined}
-        className="mt-1 flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        disabled={isBusy}
+        aria-busy={isBusy}
+        aria-disabled={isBusy}
+        title={isBusy ? "Signing you in…" : undefined}
+        className="mt-1 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
       >
-        {isSubmitting ? "Signing in…" : "Sign in"}
+        {isBusy ? (
+          <>
+            <Spinner variant="contrast" className="size-4" />
+            <span>Signing in…</span>
+          </>
+        ) : (
+          "Sign in"
+        )}
       </button>
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
         No account?{" "}
         <Link
           href="/signup"
-          className="cursor-pointer font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+          aria-disabled={isBusy}
+          tabIndex={isBusy ? -1 : undefined}
+          className={`font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100 ${
+            isBusy ? "pointer-events-none opacity-60" : "cursor-pointer"
+          }`}
         >
           Create one
         </Link>

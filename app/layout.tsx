@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { AppToaster } from "@/components/providers/app-toaster";
 import { ConfirmProvider } from "@/components/providers/confirm-provider";
+import { NavProgressProvider } from "@/components/providers/nav-progress-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/app-config";
@@ -42,7 +43,11 @@ export default function RootLayout({
           <ThemeProvider>
             <ConfirmProvider>
               <AuthProvider>
-                <div className="flex min-h-full flex-1 flex-col">{children}</div>
+                <NavProgressProvider>
+                  <div className="flex min-h-full flex-1 flex-col">
+                    {children}
+                  </div>
+                </NavProgressProvider>
                 <AppToaster />
               </AuthProvider>
             </ConfirmProvider>
