@@ -1,12 +1,13 @@
 import type { HTMLAttributes } from "react";
 
 type SkeletonProps = HTMLAttributes<HTMLDivElement> & {
-  rounded?: "md" | "lg" | "full";
+  rounded?: "md" | "lg" | "xl" | "full";
 };
 
 const roundedClass = {
   md: "rounded-md",
   lg: "rounded-lg",
+  xl: "rounded-xl",
   full: "rounded-full",
 };
 
