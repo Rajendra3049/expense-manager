@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
+import { APP_NAME } from "@/lib/app-config";
 
 export const metadata: Metadata = {
   title: "Sign in",
-  description: "Sign in to Expense Manager",
+  description: `Sign in to ${APP_NAME}`,
 };
 
 function LoginFallback() {

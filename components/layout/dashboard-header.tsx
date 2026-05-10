@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { BrandMark } from "@/components/branding/brand-mark";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
 
@@ -33,9 +34,9 @@ export function DashboardHeader() {
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href="/dashboard"
-          className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+          className="inline-flex items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
         >
-          Expense Manager
+          <BrandMark size="sm" />
         </Link>
         <nav className="flex flex-wrap items-center gap-1">
           {NAV_ITEMS.map((item) => {

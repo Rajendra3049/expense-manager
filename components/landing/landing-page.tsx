@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { AuthCallbackNotice } from "@/components/auth/auth-callback-notice";
+import { BrandMark } from "@/components/branding/brand-mark";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
+import { APP_TAGLINE } from "@/lib/app-config";
 
 const features = [
   {
@@ -86,6 +88,15 @@ export function LandingPage() {
         <div className="bg-grid absolute inset-0 opacity-[0.04] dark:opacity-[0.07]" />
       </div>
 
+      <div className="absolute left-4 top-4 z-10 sm:left-6 sm:top-6">
+        <Link
+          href="/"
+          aria-label="Home"
+          className="inline-flex items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+        >
+          <BrandMark size="sm" />
+        </Link>
+      </div>
       <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
         <ThemeToggleButton />
       </div>
@@ -99,7 +110,7 @@ export function LandingPage() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            Personal finance, simplified
+            {APP_TAGLINE}
           </div>
 
           <div className="animate-fade-in-up animation-delay-100 space-y-5">

@@ -5,6 +5,7 @@ import { AppToaster } from "@/components/providers/app-toaster";
 import { ConfirmProvider } from "@/components/providers/confirm-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { APP_DESCRIPTION, APP_NAME } from "@/lib/app-config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,8 +19,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Expense Manager",
-  description: "Personal finance and expense tracking",
+  title: {
+    default: APP_NAME,
+    template: `%s · ${APP_NAME}`,
+  },
+  description: APP_DESCRIPTION,
+  applicationName: APP_NAME,
 };
 
 export default function RootLayout({
