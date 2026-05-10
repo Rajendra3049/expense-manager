@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
-import { useTheme } from "@/components/providers/theme-provider";
+import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Expenses" },
@@ -19,7 +19,6 @@ const NAV_ITEMS = [
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -61,15 +60,7 @@ export function DashboardHeader() {
           })}
         </nav>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => toggleTheme()}
-            className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900"
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            title={theme === "dark" ? "Light mode" : "Dark mode"}
-          >
-            {theme === "dark" ? "Light" : "Dark"}
-          </button>
+          <ThemeToggleButton />
           <span className="hidden truncate text-sm text-zinc-600 sm:inline dark:text-zinc-400">
             {user?.email}
           </span>
