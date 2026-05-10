@@ -108,7 +108,8 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-1 flex h-10 w-full items-center justify-center rounded-lg bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        title={isSubmitting ? "Signing you in…" : undefined}
+        className="mt-1 flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
       >
         {isSubmitting ? "Signing in…" : "Sign in"}
       </button>
@@ -117,7 +118,7 @@ export function LoginForm() {
         No account?{" "}
         <Link
           href="/signup"
-          className="font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+          className="cursor-pointer font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
         >
           Create one
         </Link>

@@ -1,3 +1,4 @@
+import { AuthCallbackNotice } from "@/components/auth/auth-callback-notice";
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
 
 export default function AuthLayout({
@@ -11,7 +12,10 @@ export default function AuthLayout({
         <ThemeToggleButton />
       </div>
       <div className="flex flex-1 flex-col items-center justify-center">
-        {children}
+        <div className="flex w-full max-w-md flex-col items-center gap-4">
+          <AuthCallbackNotice />
+          {children}
+        </div>
       </div>
     </div>
   );
